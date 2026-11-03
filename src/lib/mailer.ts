@@ -32,4 +32,4 @@ export async function sendEmail(to: string, subject: string, body: string, event
 }
 
 export const appName = () => process.env.APP_NAME || "Racekit";
-export const appUrl = () => (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+export const appUrl = () => (process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000").replace(/\/$/, "");

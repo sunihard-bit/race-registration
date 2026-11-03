@@ -1,0 +1,24 @@
+# One-click demo deployment on Render (Blueprint).
+# Free plan: the database is reset whenever the service restarts, and demo data is re-created on start.
+# For production, add a persistent disk (paid) and set DATABASE_PATH to it, or move to Postgres.
+services:
+  - type: web
+    name: race-registration
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run seed && npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_ENCRYPTION_KEY
+        generateValue: true
+      - key: APP_NAME
+        value: Racekit
+      - key: PAYMENTS_SANDBOX
+        value: "1"
+      - key: PLATFORM_FEE_PERCENT
+        value: "2.5"
+      - key: PLATFORM_FEE_FIXED_CENTS
+        value: "200"

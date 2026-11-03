@@ -60,3 +60,7 @@ Next.js 15 (App Router, server actions) and TypeScript, SQLite via better-sqlite
 - [Payment processors](docs/PAYMENTS.md)
 - [Data protection](docs/DATA_PROTECTION.md)
 - [Roadmap](docs/ROADMAP.md)
+
+## Deploy a demo on Render
+
+Click **New → Blueprint** in Render, pick this repo, and Render reads `render.yaml`. The free plan resets the database on every restart and re-seeds demo data, so use it only for trying things out.
