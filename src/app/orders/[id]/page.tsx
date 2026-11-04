@@ -7,6 +7,7 @@ import { money } from "@/lib/format";
 import { orderById } from "@/lib/orders";
 import { appUrl } from "@/lib/mailer";
 import { feesForOrder } from "@/lib/fees";
+import { qrSvg } from "@/lib/confirm";
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -14,10 +15,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const o = orderById(id);
   if (!o || o.user_id !== user.id) notFound();
   const e = eventById(o.event_id)!;
-  const regs = all<{ id: string; first_name: string; bib: number | null; race: string; race_id: string; team: string | null; invite_code: string | null; relay_leg: string; status: string }>(
-    `SELECT r.id, r.first_name, r.bib, ra.name race, ra.id race_id, t.name team, t.invite_code, r.relay_leg, r.status
+  const regs = all<{ id: string; first_name: string; bib: number | null; race: string; race_id: string; team: string | null; invite_code: string | null; relay_leg: string; status: string; confirm_code: string | null }>(
+    `SELECT r.id, r.first_name, r.confirm_code, r.bib, ra.name race, ra.id race_id, t.name team, t.invite_code, r.relay_leg, r.status
      FROM registrations r JOIN races ra ON ra.id=r.race_id LEFT JOIN teams t ON t.id=r.team_id WHERE r.order_id=?`, o.id);
   const paid = o.status === "paid";
+  const qrs = Object.fromEntries(await Promise.all(regs.filter((r) => r.confirm_code).map(async (r) => [r.id, await qrSvg(r.confirm_code!)])));
   return (
     <div style={{ maxWidth: 640 }}>
       <h1>{paid ? "You're registered!" : "Registration received"}</h1>
@@ -36,6 +38,17 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             <strong>{r.first_name}: {r.race}</strong>
             {r.bib ? <span className="badge">Bib #{r.bib}</span> : <span className="badge warn">{r.status}</span>}
           </div>
+          {r.confirm_code && (
+            <div className="row" style={{ alignItems: "center", gap: 16 }}>
+              <div style={{ width: 150, height: 150, background: "#fff", padding: 4, borderRadius: 6 }} aria-label={`QR code for ${r.confirm_code}`}
+                dangerouslySetInnerHTML={{ __html: qrs[r.id] }} />
+              <div>
+                <div className="small muted">Confirmation code</div>
+                <div style={{ fontSize: "1.6rem", fontWeight: 700, letterSpacing: 2 }}>{r.confirm_code}</div>
+                <div className="small muted">Show this QR code or code at packet pickup. It&apos;s also in your confirmation email.</div>
+              </div>
+            </div>
+          )}
           {r.team && (
             <div className="small">
               Team <strong>{r.team}</strong>{r.relay_leg && `, ${r.relay_leg} leg`}. Invite teammates with code <strong>{r.invite_code}</strong> or this link:
