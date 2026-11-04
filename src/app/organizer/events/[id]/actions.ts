@@ -9,6 +9,7 @@ import { appUrl, sendEmail } from "@/lib/mailer";
 import { markOrderPaid } from "@/lib/orders";
 import { PROVIDERS } from "@/lib/payments";
 import { newPrepaidCode } from "@/lib/prepaid";
+import { requestFeatured } from "@/lib/featured";
 import { parseDelimited, parseResults, saveResults, timingToken } from "@/lib/timing";
 
 async function guard(fd: FormData, min: StaffRole) {
@@ -226,6 +227,13 @@ export async function rotateTimingLink(fd: FormData) {
   timingToken(eventId, true);
   audit(user.id, eventId, "timing.link_rotated", "");
   done(eventId, "timing");
+}
+
+// ---------- Featured listing ----------
+export async function askToFeature(fd: FormData) {
+  const { eventId, user } = await guard(fd, "manager");
+  await requestFeatured(eventId, user.id, parseInt(str(fd.get("weeks")), 10), str(fd.get("note"), 1000));
+  done(eventId, "settings");
 }
 
 // ---------- Staff ----------

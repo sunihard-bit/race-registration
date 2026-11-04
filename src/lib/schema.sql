@@ -263,3 +263,16 @@ CREATE TABLE IF NOT EXISTS prepaid_codes (
   used_at TEXT,
   void INTEGER NOT NULL DEFAULT 0
 );
+
+-- Paid "Featured" placement on Find a race. Organizers request it; a platform admin approves and invoices.
+CREATE TABLE IF NOT EXISTS featured_requests (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id),
+  weeks INTEGER NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  price_cents INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending', -- pending | approved | declined
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  decided_at TEXT
+);

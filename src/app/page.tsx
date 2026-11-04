@@ -4,7 +4,7 @@ import NearMe from "@/components/NearMe";
 import { all } from "@/lib/db";
 import { date, sportLabel, SPORTS } from "@/lib/format";
 
-type Row = { slug: string; name: string; sport: string; location: string; start_date: string; races: string | null; lat: number | null; lng: number | null };
+type Row = { slug: string; name: string; sport: string; location: string; start_date: string; races: string | null; lat: number | null; lng: number | null; featured: number };
 type SP = { q?: string; sport?: string; lat?: string; lng?: string; within?: string };
 
 /** Great-circle distance in km. */
@@ -20,7 +20,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
   const { q = "", sport = "", lat = "", lng = "", within = "50" } = await searchParams;
   const here = Number.isFinite(parseFloat(lat)) && Number.isFinite(parseFloat(lng)) ? [parseFloat(lat), parseFloat(lng)] as const : null;
   const rows = all<Row>(
-    `SELECT e.slug, e.name, e.sport, e.location, e.start_date, e.lat, e.lng,
+    `SELECT e.slug, e.name, e.sport, e.location, e.start_date, e.lat, e.lng, (e.featured_until >= date('now')) featured,
             (SELECT group_concat(name, ' · ') FROM races r WHERE r.event_id = e.id) races
      FROM events e
      WHERE e.status = 'published' AND e.start_date >= date('now', '-1 day')
@@ -36,6 +36,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
     events = events.filter((e) => e.dist != null && e.dist <= max).sort((a, b) => a.dist! - b.dist!);
   }
   events = events.slice(0, 100);
+  // Paid placement: shown first and clearly labelled. Only when the runner hasn't narrowed by distance.
+  const featured = here ? [] : events.filter((e) => e.featured).slice(0, 3);
   return (
     <>
       <section className="hero">
@@ -59,6 +61,23 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
           <Suspense><NearMe /></Suspense>
         </form>
       </section>
+      {featured.length > 0 && (
+        <>
+          <h2>Featured</h2>
+          <div className="grid" style={{ marginBottom: 24 }}>
+            {featured.map((e) => (
+              <Link key={e.slug} href={`/events/${e.slug}`} className="card featured" style={{ textDecoration: "none", color: "inherit", borderColor: "#0f766e", borderWidth: 2 }}>
+                <div className="row" style={{ justifyContent: "space-between" }}>
+                  <span className="badge">{sportLabel(e.sport)}</span><span className="small muted">Featured</span>
+                </div>
+                <h3 style={{ marginTop: 8 }}>{e.name}</h3>
+                <div className="muted small">{date(e.start_date)} · {e.location}</div>
+                {e.races && <div className="small" style={{ marginTop: 6 }}>{e.races}</div>}
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
       <h2>{here ? "Upcoming events near you" : "Upcoming events"}</h2>
       {events.length === 0 && (here
         ? <p className="muted">No events within that distance. Try a wider range.</p>

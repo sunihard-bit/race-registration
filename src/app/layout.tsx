@@ -18,6 +18,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {user?.is_organizer ? <Link href="/organizer">Organizer</Link> : <Link href="/organizer">For organizers</Link>}
               {user ? (
                 <>
+                  {user.is_admin ? <Link href="/admin">Admin</Link> : null}
                   <Link href="/account">My account</Link>
                   <form action="/logout" method="post"><button className="small secondary">Log out</button></form>
                 </>

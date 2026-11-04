@@ -2,7 +2,9 @@ import { requireEventRole } from "@/lib/auth";
 import { eventById, paymentMethods } from "@/lib/events";
 import { SPORTS } from "@/lib/format";
 import { PROVIDERS } from "@/lib/payments";
-import { saveSettings, setStatus } from "../actions";
+import { askToFeature, saveSettings, setStatus } from "../actions";
+import { FEATURED_WEEKS, featuredWeekCents, pendingRequest } from "@/lib/featured";
+import { date, money } from "@/lib/format";
 import LocationPicker from "@/components/LocationPicker";
 
 export default async function Settings({ params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +12,8 @@ export default async function Settings({ params }: { params: Promise<{ id: strin
   await requireEventRole(id, "manager");
   const e = eventById(id)!;
   const pm = paymentMethods(e);
+  const pending = pendingRequest(id);
+  const featuredNow = e.featured_until && e.featured_until >= new Date().toISOString().slice(0, 10);
   return (
     <div className="stack" style={{ maxWidth: 760 }}>
       <div className="card row" style={{ justifyContent: "space-between" }}>
@@ -20,6 +24,24 @@ export default async function Settings({ params }: { params: Promise<{ id: strin
               <button className={s === "published" ? "" : "secondary"}>{s === "published" ? "Publish" : s === "closed" ? "Close registration" : "Back to draft"}</button></form>
           ))}
         </div>
+      </div>
+      <div className="card">
+        <h3>Feature this event</h3>
+        <p className="small">Featured events appear at the top of Find a race with a &ldquo;Featured&rdquo; label, so more runners see them.
+          {" "}{money(featuredWeekCents(), e.currency)} per week, invoiced after approval.</p>
+        {featuredNow && <p className="small"><span className="badge">Featured</span> until {date(e.featured_until)}.</p>}
+        {pending ? (
+          <p className="small muted">Request for {pending.weeks} week{pending.weeks > 1 ? "s" : ""} sent {date(pending.created_at.slice(0, 10))}. We&apos;ll email you when it&apos;s approved.</p>
+        ) : e.status !== "published" ? (
+          <p className="small muted">Publish the event first, then you can request featuring.</p>
+        ) : (
+          <form action={askToFeature} className="row">
+            <input type="hidden" name="event_id" value={id} />
+            <select name="weeks" style={{ maxWidth: 220 }}>{FEATURED_WEEKS.map((w) => <option key={w} value={w}>{w} week{w > 1 ? "s" : ""} · {money(featuredWeekCents() * w, e.currency)}</option>)}</select>
+            <input name="note" placeholder="Anything we should know (optional)" style={{ maxWidth: 300 }} />
+            <button className="secondary">{featuredNow ? "Extend featuring" : "Request featuring"}</button>
+          </form>
+        )}
       </div>
       <form action={saveSettings} className="card">
         <input type="hidden" name="event_id" value={id} />

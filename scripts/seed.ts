@@ -9,6 +9,7 @@ async function main() {
   const hash = bcrypt.hashSync("password1234", 10);
   const org = newId(), runner = newId();
   run("INSERT INTO users (id,email,name,password_hash,is_organizer) VALUES (?,?,?,?,1)", org, "organizer@example.com", "Demo Organizer", hash);
+  run("INSERT INTO users (id,email,name,password_hash,is_admin) VALUES (?,?,?,?,1)", newId(), "admin@example.com", "Platform Admin", hash);
   run("INSERT INTO users (id,email,name,password_hash) VALUES (?,?,?,?)", runner, "runner@example.com", "Demo Runner", hash);
 
   const day = (d: number) => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10);
@@ -63,6 +64,7 @@ async function main() {
     "Pay at packet pickup or by bank transfer.");
   run("INSERT INTO event_staff VALUES (?,?,'owner')", tri, org);
   run("UPDATE events SET lat=?, lng=? WHERE id=?", 11.1636, -60.8436, tri); // Pigeon Point, Tobago
+  run("UPDATE events SET featured_until=date('now','+14 days') WHERE id=?", tri);
   const sprint = newId(), relay = newId();
   run("INSERT INTO races (id,event_id,name,distance,kind,capacity,min_age,start_time,sort) VALUES (?,?,?,?,?,?,?,?,0)", sprint, tri, "Sprint Triathlon", "750m / 20km / 5km", "individual", 150, 15, "06:30");
   run("INSERT INTO races (id,event_id,name,distance,kind,capacity,relay_legs,start_time,sort) VALUES (?,?,?,?,?,?,?,?,1)", relay, tri, "Sprint Relay (3 people)", "750m / 20km / 5km", "relay", 30, JSON.stringify(["Swim", "Bike", "Run"]), "06:35");
