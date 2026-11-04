@@ -8,6 +8,7 @@ type Props = {
   questions: { id: string; label: string; kind: string; options: string[]; required: boolean }[];
   defaults: { name: string; email: string };
   profile?: Record<string, string> | null;
+  fees?: { id: string; name: string; organization: string; amount: string; memberExemption: boolean; memberLabel: string }[];
   inviteCode?: string;
 };
 
@@ -106,6 +107,16 @@ export default function RegisterForm(p: Props) {
         </section>
       )}
 
+      {p.fees && p.fees.length > 0 && (
+        <section className="card stack" style={{ marginBottom: 16 }}>
+          <h3>Required memberships and fees</h3>
+          <p className="small muted">These are collected with your entry and passed on to the organization named.</p>
+          {p.fees.map((f) => (
+            <FeeChoice key={f.id} fee={f} initial={v[`fee_${f.id}`]} member={d(`fee_member_${f.id}`)} />
+          ))}
+        </section>
+      )}
+
       <section className="card" style={{ marginBottom: 16 }}>
         <h3>Payment extras</h3>
         <div className="cols">
@@ -123,5 +134,23 @@ export default function RegisterForm(p: Props) {
 
       <button disabled={pending}>{pending ? "Saving…" : "Continue to payment"}</button>
     </form>
+  );
+}
+
+function FeeChoice({ fee, initial, member }: { fee: NonNullable<Props["fees"]>[number]; initial?: string; member: string }) {
+  const [choice, setChoice] = useState(initial || "pay");
+  return (
+    <div>
+      <strong>{fee.name}</strong> <span className="muted small">({fee.organization})</span>
+      <label className="check"><input type="radio" name={`fee_${fee.id}`} value="pay" checked={choice === "pay"} onChange={() => setChoice("pay")} /> Pay {fee.amount}</label>
+      {fee.memberExemption && (
+        <>
+          <label className="check"><input type="radio" name={`fee_${fee.id}`} value="member" checked={choice === "member"} onChange={() => setChoice("member")} /> I&apos;m already a member of {fee.organization}</label>
+          {choice === "member" && (
+            <div className="field" style={{ marginLeft: 24 }}><label>{fee.memberLabel}</label><input name={`fee_member_${fee.id}`} defaultValue={member} required /></div>
+          )}
+        </>
+      )}
+    </div>
   );
 }

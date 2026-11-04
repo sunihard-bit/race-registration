@@ -5,6 +5,7 @@ import { currentTier, eventBySlug, questionsFor, racesFor, relayLegs } from "@/l
 import { money } from "@/lib/format";
 import RegisterForm from "./RegisterForm";
 import { getProfile } from "@/lib/profile";
+import { feesForRace } from "@/lib/fees";
 
 export default async function Register({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ race?: string; invite?: string }> }) {
   const { slug } = await params;
@@ -25,6 +26,7 @@ export default async function Register({ params, searchParams }: { params: Promi
         eventId={e.id} raceId={race.id} raceKind={race.kind} legs={relayLegs(race)} waiver={e.waiver_text}
         fundraising={!!e.fundraising_enabled} cause={e.fundraising_cause} questions={questions}
         defaults={{ name: user.name, email: user.email }} inviteCode={invite} profile={getProfile(user.id)}
+        fees={feesForRace(e.id, race.id).map((f) => ({ id: f.id, name: f.name, organization: f.organization, amount: money(f.amount_cents, e.currency), memberExemption: !!f.member_exemption, memberLabel: f.member_label }))}
       />
     </div>
   );

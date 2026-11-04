@@ -17,7 +17,19 @@ function open() {
   db.pragma("foreign_keys = ON");
   const schema = fs.readFileSync(path.join(process.cwd(), "src", "lib", "schema.sql"), "utf8");
   db.exec(schema);
+  migrate(db);
   return db;
+}
+
+/** Column additions for databases created by an older version of the schema. */
+function migrate(d: Database.Database) {
+  const has = (table: string, col: string) =>
+    (d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some((c) => c.name === col);
+  if (!has("event_fees", "deduct_processing")) {
+    d.exec("ALTER TABLE event_fees ADD COLUMN deduct_processing INTEGER NOT NULL DEFAULT 1");
+    d.exec("ALTER TABLE event_fees ADD COLUMN processing_bps INTEGER NOT NULL DEFAULT 350");
+  }
+  if (!has("orders", "third_party_cents")) d.exec("ALTER TABLE orders ADD COLUMN third_party_cents INTEGER NOT NULL DEFAULT 0");
 }
 
 export const db: Database.Database = globalThis.__db ?? (globalThis.__db = open());

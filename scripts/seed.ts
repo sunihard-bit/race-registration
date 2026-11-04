@@ -53,6 +53,22 @@ async function main() {
       i % 17 === 0 ? "Barbados" : "Trinidad and Tobago", towns[i % towns.length], sizes[i % sizes.length], JSON.stringify({ "Estimated finish time": "30–45 min" }), created, i % 3 === 0 ? 1 : 0, created);
     if (i % 8 !== 0) await markOrderPaid(order, i % 5 === 0 ? "manual" : "wipay", "seed");
   }
-  console.log("Seeded. Event: /events/savannah-sunrise-run");
+  // A triathlon with a federation one-day licence
+  const tri = newId();
+  run(`INSERT INTO events (id,slug,owner_id,name,sport,description,location,start_date,status,waiver_text,payment_methods,manual_payment_instructions)
+       VALUES (?,?,?,?,?,?,?,?,'published',?,?,?)`, tri, "pigeon-point-sprint-tri", org, "Pigeon Point Sprint Triathlon", "triathlon",
+    "750 m sea swim, 20 km bike, 5 km run. Relay teams of three welcome. Athletes without an annual federation membership need a one-day licence.",
+    "Pigeon Point, Tobago", day(60), "I accept the risks of open water swimming, cycling and running.", JSON.stringify(["wipay", "manual"]),
+    "Pay at packet pickup or by bank transfer.");
+  run("INSERT INTO event_staff VALUES (?,?,'owner')", tri, org);
+  const sprint = newId(), relay = newId();
+  run("INSERT INTO races (id,event_id,name,distance,kind,capacity,min_age,start_time,sort) VALUES (?,?,?,?,?,?,?,?,0)", sprint, tri, "Sprint Triathlon", "750m / 20km / 5km", "individual", 150, 15, "06:30");
+  run("INSERT INTO races (id,event_id,name,distance,kind,capacity,relay_legs,start_time,sort) VALUES (?,?,?,?,?,?,?,?,1)", relay, tri, "Sprint Relay (3 people)", "750m / 20km / 5km", "relay", 30, JSON.stringify(["Swim", "Bike", "Run"]), "06:35");
+  run("INSERT INTO price_tiers (id,race_id,name,price_cents) VALUES (?,?,?,?)", newId(), sprint, "Regular", 35000);
+  run("INSERT INTO price_tiers (id,race_id,name,price_cents) VALUES (?,?,?,?)", newId(), relay, "Per person", 20000);
+  run(`INSERT INTO event_fees (id,event_id,name,organization,amount_cents,race_ids,member_exemption,member_label) VALUES (?,?,?,?,?,'[]',1,?)`,
+    newId(), tri, "One-day race licence", "National Triathlon Federation", 5000, "Federation membership number");
+
+  console.log("Seeded. Events: /events/savannah-sunrise-run and /events/pigeon-point-sprint-tri");
 }
 main();

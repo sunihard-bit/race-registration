@@ -2,10 +2,11 @@ import { all, audit, db, one, run } from "./db";
 import { eventById } from "./events";
 import { appName, appUrl, sendEmail } from "./mailer";
 import { money } from "./format";
+import { feesForOrder } from "./fees";
 
 export type Order = {
   id: string; event_id: string; user_id: string | null; buyer_email: string; subtotal_cents: number;
-  discount_cents: number; donation_cents: number; fee_cents: number; total_cents: number; currency: string;
+  discount_cents: number; donation_cents: number; fee_cents: number; third_party_cents: number; total_cents: number; currency: string;
   status: string; payment_method: string | null; provider_ref: string | null; discount_code_id: string | null;
   paid_at: string | null; created_at: string;
 };
@@ -37,7 +38,8 @@ export async function markOrderPaid(orderId: string, method: string, ref: string
     "SELECT r.first_name, r.bib, ra.name race FROM registrations r JOIN races ra ON ra.id=r.race_id WHERE r.order_id=?",
     orderId
   );
-  const lines = regs.map((r) => `- ${r.first_name}: ${r.race}, bib #${r.bib}`).join("\n");
+  const feeLines = feesForOrder(orderId).map((f) => `- ${f.name} (${f.organization}): ${f.exempt ? `member #${f.member_number}` : money(f.amount_cents, order.currency)}`);
+  const lines = [...regs.map((r) => `- ${r.first_name}: ${r.race}, bib #${r.bib}`), ...feeLines].join("\n");
   const body = `You're registered for ${ev.name}!\n\n${lines}\n\nTotal paid: ${money(order.total_cents, order.currency)}\nOrder: ${appUrl()}/orders/${orderId}\n\nManage your registration and your data at ${appUrl()}/account\n\n${appName()}`;
   if (order.total_cents > 0 || regs.length) await sendEmail(order.buyer_email, `Confirmed: ${ev.name}`, body, ev.id);
   return orderById(orderId);

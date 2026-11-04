@@ -14,9 +14,9 @@ export default async function Overview({ params }: { params: Promise<{ id: strin
   const t = one<{ total: number; confirmed: number | null; pending: number | null; checked: number | null; marketing: number | null }>(
     `SELECT COUNT(*) total, SUM(status='confirmed') confirmed, SUM(status='pending') pending, SUM(checked_in_at IS NOT NULL) checked,
             SUM(consent_marketing) marketing FROM registrations WHERE ${live}`, id)!;
-  const m = one<{ gross: number; entries: number; fees: number; donations: number; discounts: number }>(
+  const m = one<{ gross: number; entries: number; fees: number; donations: number; discounts: number; third: number }>(
     `SELECT COALESCE(SUM(total_cents),0) gross, COALESCE(SUM(subtotal_cents - discount_cents),0) entries, COALESCE(SUM(fee_cents),0) fees,
-            COALESCE(SUM(donation_cents),0) donations, COALESCE(SUM(discount_cents),0) discounts
+            COALESCE(SUM(donation_cents),0) donations, COALESCE(SUM(discount_cents),0) discounts, COALESCE(SUM(third_party_cents),0) third
      FROM orders WHERE event_id=? AND status='paid'`, id)!;
   const netEntries = m.entries - (e.fee_absorbed ? m.fees : 0);
   const daily = all<{ k: string; n: number }>(`SELECT date(created_at) k, COUNT(*) n FROM registrations WHERE ${live} GROUP BY k ORDER BY k`, id);
@@ -43,6 +43,7 @@ export default async function Overview({ params }: { params: Promise<{ id: strin
         <Stat label="Collected from participants" value={money(m.gross, c)} sub={`Platform fees ${money(m.fees, c)}${e.fee_absorbed ? " (you absorb)" : " (paid by participants)"}`} />
         <Stat label="Net entry income" value={money(netEntries, c)} sub={`After ${money(m.discounts, c)} in discounts`} />
         <Stat label="Donations" value={money(m.donations, c)} sub={e.fundraising_goal_cents ? `Goal ${money(e.fundraising_goal_cents, c)}` : undefined} />
+        {m.third > 0 && <Stat label="Held for other organizations" value={money(m.third, c)} sub="Federation and other fees to pass on" />}
         <Stat label="Checked in" value={`${t.checked ?? 0} of ${t.confirmed ?? 0}`} sub={`${teams} teams`} />
         <Stat label="Marketing opt-in" value={t.total ? `${Math.round(((t.marketing ?? 0) / t.total) * 100)}%` : "–"} sub="Can be emailed about future events" />
       </div>
