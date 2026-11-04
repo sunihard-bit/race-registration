@@ -46,6 +46,7 @@ function migrate(d: Database.Database) {
       try { set.run(newConfirmCode(), r.id); break; } catch (e) { if (!/UNIQUE/i.test(String(e))) throw e; }
     }
   }
+  if (!has("events", "lat")) { exec("ALTER TABLE events ADD COLUMN lat REAL"); exec("ALTER TABLE events ADD COLUMN lng REAL"); }
   if (!has("orders", "third_party_cents")) exec("ALTER TABLE orders ADD COLUMN third_party_cents INTEGER NOT NULL DEFAULT 0");
 }
 

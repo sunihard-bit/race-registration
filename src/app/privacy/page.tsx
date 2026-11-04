@@ -17,6 +17,8 @@ export default function Privacy() {
         <li><strong>Payment records</strong> (amounts, payment method, transaction reference). Card numbers are entered on the payment provider&apos;s page and never reach us.</li>
         <li><strong>Your waiver signature</strong> (typed name and time) as evidence that you accepted the event terms.</li>
       </ul>
+      <h2>Your location</h2>
+      <p>If you tap &ldquo;Near me&rdquo;, your browser asks before sharing your location. We round it to about 1 km, use it only to sort events by distance, and never save it. Event maps load from OpenStreetMap.</p>
       <h2>Marketing</h2>
       <p>We or the organizer only send promotional emails if you tick the opt-in box. You can opt out anytime from <a href="/account/data">Your data</a>.</p>
       <h2>Who we share it with</h2>

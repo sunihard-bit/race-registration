@@ -16,7 +16,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     <>
       <span className="badge">{sportLabel(e.sport)}</span>
       <h1 style={{ marginTop: 8 }}>{e.name}</h1>
-      <p className="muted">{date(e.start_date)} · {e.location}</p>
+      <p className="muted">{date(e.start_date)} · {e.location}{e.lat != null && e.lng != null && <> · <a href={`https://www.openstreetmap.org/?mlat=${e.lat}&mlon=${e.lng}#map=16/${e.lat}/${e.lng}`} target="_blank" rel="noopener noreferrer">Map</a></>}</p>
       {!open && <div className="alert">Registration is closed.</div>}
       {hasResults && <p><Link href={`/events/${e.slug}/results`} className="btn secondary">View results</Link></p>}
       <p style={{ whiteSpace: "pre-wrap" }}>{e.description}</p>

@@ -3,6 +3,7 @@ import { eventById, paymentMethods } from "@/lib/events";
 import { SPORTS } from "@/lib/format";
 import { PROVIDERS } from "@/lib/payments";
 import { saveSettings, setStatus } from "../actions";
+import LocationPicker from "@/components/LocationPicker";
 
 export default async function Settings({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,6 +31,7 @@ export default async function Settings({ params }: { params: Promise<{ id: strin
           <div className="field"><label>Currency</label><select name="currency" defaultValue={e.currency}>{["TTD", "USD", "JMD", "BBD", "XCD", "GYD"].map((c) => <option key={c}>{c}</option>)}</select></div>
         </div>
         <div className="field"><label>Location</label><input name="location" defaultValue={e.location} /></div>
+        <LocationPicker lat={e.lat} lng={e.lng} />
         <div className="field"><label>Description</label><textarea name="description" defaultValue={e.description} rows={6} /></div>
 
         <h3>Waiver and policies</h3>

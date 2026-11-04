@@ -21,6 +21,7 @@ async function main() {
     JSON.stringify(["wipay", "manual"]), "Republic Bank, Acct name: Demo Events Ltd, Acct # 000000000. Use your order reference.",
     "Children's cancer ward", 2_000_000);
   run("INSERT INTO event_staff VALUES (?,?,'owner')", ev, org);
+  run("UPDATE events SET lat=?, lng=? WHERE id=?", 10.6722, -61.5151, ev); // Queen's Park Savannah
 
   const races: [string, string, string, number, string][] = [
     ["5K", "5 km", "individual", 300, "[]"], ["10K", "10 km", "individual", 300, "[]"], ["4 x 2.5K Relay", "10 km", "relay", 40, JSON.stringify(["Leg 1", "Leg 2", "Leg 3", "Leg 4"])],
@@ -61,6 +62,7 @@ async function main() {
     "Pigeon Point, Tobago", day(60), "I accept the risks of open water swimming, cycling and running.", JSON.stringify(["wipay", "manual"]),
     "Pay at packet pickup or by bank transfer.");
   run("INSERT INTO event_staff VALUES (?,?,'owner')", tri, org);
+  run("UPDATE events SET lat=?, lng=? WHERE id=?", 11.1636, -60.8436, tri); // Pigeon Point, Tobago
   const sprint = newId(), relay = newId();
   run("INSERT INTO races (id,event_id,name,distance,kind,capacity,min_age,start_time,sort) VALUES (?,?,?,?,?,?,?,?,0)", sprint, tri, "Sprint Triathlon", "750m / 20km / 5km", "individual", 150, 15, "06:30");
   run("INSERT INTO races (id,event_id,name,distance,kind,capacity,relay_legs,start_time,sort) VALUES (?,?,?,?,?,?,?,?,1)", relay, tri, "Sprint Relay (3 people)", "750m / 20km / 5km", "relay", 30, JSON.stringify(["Swim", "Bike", "Run"]), "06:35");

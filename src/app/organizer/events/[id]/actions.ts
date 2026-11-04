@@ -31,6 +31,9 @@ export async function saveSettings(fd: FormData) {
     str(fd.get("manual_payment_instructions"), 2000), fd.get("fee_absorbed") === "on" ? 1 : 0, fd.get("fundraising_enabled") === "on" ? 1 : 0,
     str(fd.get("fundraising_cause"), 120), toCents(fd.get("fundraising_goal")), Math.max(30, parseInt(str(fd.get("retention_days")) || "365", 10)),
     str(fd.get("currency")) || "TTD", eventId);
+  const lat = parseFloat(str(fd.get("lat"))), lng = parseFloat(str(fd.get("lng")));
+  const ok = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  run("UPDATE events SET lat=?, lng=? WHERE id=?", ok ? lat : null, ok ? lng : null, eventId);
   audit(user.id, eventId, "event.settings", "");
   done(eventId, "settings");
 }
