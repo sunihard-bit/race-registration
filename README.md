@@ -30,6 +30,7 @@ Race registration for road races, triathlons, cycling, swims and relays, built f
 - Team/relay view showing which teams are complete and which legs are missing
 - Email participants (everyone, unpaid, per race, or marketing opt-ins only)
 - Upload results from CSV; public results page with search
+- Timing tab for race timers: start list download (bib, chip, age on race day, 10-year age group, race, wave, team, relay leg), a private link timing software can read the start list from and send results to, chip and wave import, and a results import that accepts common timer exports as they are (CSV, tab or semicolon; headings like Pos, Bib No., Net Time, Division)
 - Staff roles (owner, manager, check-in, viewer) and an audit log
 - Choose to absorb the platform fee or pass it on; set a data retention period
 

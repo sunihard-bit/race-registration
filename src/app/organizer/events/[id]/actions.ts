@@ -2,13 +2,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireEventRole, type StaffRole } from "@/lib/auth";
-import { all, audit, newId, one, run } from "@/lib/db";
+import { all, audit, db, newId, one, run } from "@/lib/db";
 import { eventById } from "@/lib/events";
 import { money, str, toCents } from "@/lib/format";
 import { appUrl, sendEmail } from "@/lib/mailer";
 import { markOrderPaid } from "@/lib/orders";
 import { PROVIDERS } from "@/lib/payments";
 import { newPrepaidCode } from "@/lib/prepaid";
+import { parseDelimited, parseResults, saveResults, timingToken } from "@/lib/timing";
 
 async function guard(fd: FormData, min: StaffRole) {
   const eventId = str(fd.get("event_id"));
@@ -175,36 +176,53 @@ export async function emailParticipants(fd: FormData) {
   redirect(`/organizer/events/${eventId}/email?sent=${to.length}`);
 }
 
-// ---------- Results ----------
+// ---------- Results & timing ----------
+async function uploadedText(fd: FormData) {
+  const file = fd.get("file");
+  return file instanceof File && file.size ? await file.text() : str(fd.get("csv"), 5_000_000);
+}
+
 export async function uploadResults(fd: FormData) {
   const { eventId, user } = await guard(fd, "manager");
   const raceId = str(fd.get("race_id"));
-  if (!one("SELECT 1 FROM races WHERE id=? AND event_id=?", raceId, eventId)) return;
-  const file = fd.get("file");
-  const text = file instanceof File && file.size ? await file.text() : str(fd.get("csv"), 2_000_000);
-  const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  const header = (lines.shift() || "").toLowerCase().split(",").map((h) => h.trim());
-  const col = (n: string) => header.indexOf(n);
-  if (col("name") < 0 && col("bib") < 0) redirect(`/organizer/events/${eventId}/results?error=header`);
-  run("DELETE FROM results WHERE race_id=?", raceId);
+  if (raceId && !one("SELECT 1 FROM races WHERE id=? AND event_id=?", raceId, eventId)) return;
+  const back = str(fd.get("back")) === "timing" ? "timing" : "results";
+  const { rows, error } = parseResults(await uploadedText(fd));
+  if (error) redirect(`/organizer/events/${eventId}/${back}?error=header`);
+  const r = saveResults(eventId, rows, raceId);
+  audit(user.id, eventId, "results.uploaded", `${r.saved} rows, ${r.skipped} skipped`);
+  redirect(`/organizer/events/${eventId}/${back}?uploaded=${r.saved}&skipped=${r.skipped}`);
+}
+
+/** Bib-to-chip (and optional wave) assignments from the timer's chip file. */
+export async function uploadChips(fd: FormData) {
+  const { eventId, user } = await guard(fd, "manager");
+  const table = parseDelimited(await uploadedText(fd));
+  const header = (table.shift() || []).map((h) => h.toLowerCase().trim());
+  const bi = header.findIndex((h) => ["bib", "bib #", "bib number", "no", "number"].includes(h));
+  const ci = header.findIndex((h) => ["chip", "chip id", "chip code", "tag", "tag id", "transponder", "epc"].includes(h));
+  const wi = header.findIndex((h) => ["wave", "start wave", "corral", "heat"].includes(h));
+  if (bi < 0 || (ci < 0 && wi < 0)) redirect(`/organizer/events/${eventId}/timing?error=chips`);
   let n = 0;
-  for (const line of lines) {
-    const c = line.split(",").map((s) => s.trim());
-    const bib = col("bib") >= 0 ? parseInt(c[col("bib")], 10) : NaN;
-    let name = col("name") >= 0 ? c[col("name")] : "";
-    let gender = col("gender") >= 0 ? c[col("gender")] : "";
-    if (!name && Number.isFinite(bib)) {
-      const r = one<{ first_name: string; last_name: string; gender: string }>("SELECT first_name, last_name, gender FROM registrations WHERE event_id=? AND bib=?", eventId, bib);
-      if (r) { name = `${r.first_name} ${r.last_name}`; gender ||= r.gender; }
+  db.transaction(() => {
+    for (const row of table) {
+      const bib = parseInt(row[bi] ?? "", 10);
+      if (!Number.isFinite(bib)) continue;
+      const sets: string[] = [], vals: unknown[] = [];
+      if (ci >= 0) { sets.push("chip=?"); vals.push((row[ci] ?? "").slice(0, 64)); }
+      if (wi >= 0) { sets.push("wave=?"); vals.push((row[wi] ?? "").slice(0, 40)); }
+      n += run(`UPDATE registrations SET ${sets.join(",")} WHERE event_id=? AND bib=?`, ...vals, eventId, bib).changes;
     }
-    run("INSERT INTO results (id, race_id, bib, name, gender, category, chip_time, gun_time, place) VALUES (?,?,?,?,?,?,?,?,?)",
-      newId(), raceId, Number.isFinite(bib) ? bib : null, name || "Unknown", gender, col("category") >= 0 ? c[col("category")] : "",
-      col("chip_time") >= 0 ? c[col("chip_time")] : "", col("gun_time") >= 0 ? c[col("gun_time")] : "",
-      col("place") >= 0 ? parseInt(c[col("place")], 10) || null : null);
-    n++;
-  }
-  audit(user.id, eventId, "results.uploaded", `${n} rows`);
-  redirect(`/organizer/events/${eventId}/results?uploaded=${n}`);
+  })();
+  audit(user.id, eventId, "timing.chips", `${n} participants`);
+  redirect(`/organizer/events/${eventId}/timing?chips=${n}`);
+}
+
+export async function rotateTimingLink(fd: FormData) {
+  const { eventId, user } = await guard(fd, "manager");
+  timingToken(eventId, true);
+  audit(user.id, eventId, "timing.link_rotated", "");
+  done(eventId, "timing");
 }
 
 // ---------- Staff ----------

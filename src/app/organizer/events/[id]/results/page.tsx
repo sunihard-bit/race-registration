@@ -15,7 +15,7 @@ export default async function ResultsAdmin({ params, searchParams }: { params: P
       {uploaded && <div className="alert">Imported {uploaded} results. <Link href={`/events/${e.slug}/results`}>View public results</Link></div>}
       {error && <div className="alert error">The first line must be a header that includes at least a name or bib column.</div>}
       <div className="card small">
-        Upload a CSV from your timing system. Columns (any order): <code>place, bib, name, gender, category, chip_time, gun_time</code>.
+        Upload a results file from your timing system. Common headings like <code>Pos, Bib, Name, Chip Time, Gun Time, Sex, Division</code> are recognised (see the <Link href={`/organizer/events/${id}/timing`}>Timing</Link> tab for more).
         If you leave <code>name</code> out, names are filled in from bib numbers. Uploading again replaces that race&apos;s results.
       </div>
       {races.map((r) => {
