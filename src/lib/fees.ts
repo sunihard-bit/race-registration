@@ -21,8 +21,8 @@ export const feesForOrder = (orderId: string) =>
     `SELECT rf.name, rf.organization, rf.amount_cents, rf.exempt, rf.member_number
      FROM registration_fees rf JOIN registrations r ON r.id=rf.registration_id WHERE r.order_id=?`, orderId);
 
-/** Card payments incur processor fees; cash, bank transfer and free orders don't. */
-export const isCardPayment = (method: string | null) => !!method && !["manual", "free"].includes(method);
+/** Card payments incur processor fees; cash, bank transfer, prepaid codes and free orders don't. */
+export const isCardPayment = (method: string | null) => !!method && !["manual", "free", "prepaid"].includes(method);
 
 /** Processing cost on one fee amount, borne by the receiving organization when the fee is set up that way. */
 export function processingDeduction(f: Pick<EventFee, "deduct_processing" | "processing_bps">, amountCents: number, method: string | null) {

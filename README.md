@@ -13,7 +13,7 @@ Race registration for road races, triathlons, cycling, swims and relays, built f
 - Discount codes, optional donation, personal fundraising page with a goal
 - Pay required fees to other organizations (e.g. a federation one-day licence) at checkout, or give an annual membership number instead
 - Save their details for faster registration next time
-- Pay by card (WiPay or First Atlantic Commerce), PayPal, or bank transfer/cash
+- Pay by card (WiPay or First Atlantic Commerce), PayPal, bank transfer/cash, or a prepaid code from the organizer
 - Confirmation email with bib number; account page with all registrations
 - Download all their data, manage marketing consent, delete their account
 
@@ -22,6 +22,7 @@ Race registration for road races, triathlons, cycling, swims and relays, built f
 - Date-based price tiers (early bird, regular, late)
 - Custom registration questions, waiver, refund policy
 - Discount codes (percent or fixed, usage limits, expiry)
+- Prepaid codes: record a bank deposit or cash payment and the app generates a one-time code (optionally emailed) that the participant uses at checkout instead of a card
 - Fees for other organizations (federation licences etc.) per event or race, with member exemptions and a remittance CSV per fee
 - Dashboard: registrations per day, revenue, fees, donations, check-in progress, and breakdowns by race, age, gender, T-shirt size, town, country, club, discount code and payment method
 - Participant list with search and filters, bib editing, mark paid, cancel, CSV export (with or without medical info)

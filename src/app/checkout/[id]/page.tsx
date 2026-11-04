@@ -6,6 +6,7 @@ import { money } from "@/lib/format";
 import { orderById } from "@/lib/orders";
 import { PROVIDERS } from "@/lib/payments";
 import { feesForOrder } from "@/lib/fees";
+import { redeemPrepaid } from "./actions";
 
 const ERR: Record<string, string> = { method: "That payment method isn't available.", provider: "The payment provider didn't respond. Please try again." };
 
@@ -44,6 +45,11 @@ export default async function Checkout({ params, searchParams }: { params: Promi
       </div>
       <h2>How would you like to pay?</h2>
       <div className="stack">
+        <form action={redeemPrepaid} className="card stack">
+          <input type="hidden" name="order_id" value={o.id} />
+          <div><strong>I have a prepaid code</strong><div className="small muted">Already paid the organizer by bank deposit or cash? Enter the code they sent you.</div></div>
+          <div className="row"><input name="code" placeholder="PAID-XXXXXX" required style={{ maxWidth: 220, textTransform: "uppercase" }} /><button>Use code</button></div>
+        </form>
         {methods.map((p) => (
           <form key={p.id} action="/api/payments/start" method="post" className="card row" style={{ justifyContent: "space-between" }}>
             <input type="hidden" name="order_id" value={o.id} />

@@ -11,7 +11,7 @@ export default async function EventAdminLayout({ children, params }: { children:
   if (!e) notFound();
   const { role } = await requireEventRole(id, "viewer");
   const tabs: [string, string][] = [["", "Overview"], ["participants", "Participants"], ["checkin", "Check-in"], ["teams", "Teams"]];
-  if (can(role, "manager")) tabs.push(["races", "Races & prices"], ["questions", "Form"], ["discounts", "Discounts"], ["fees", "Other fees"], ["email", "Email"], ["results", "Results"], ["settings", "Settings"]);
+  if (can(role, "manager")) tabs.push(["races", "Races & prices"], ["questions", "Form"], ["discounts", "Discounts"], ["prepaid", "Prepaid codes"], ["fees", "Other fees"], ["email", "Email"], ["results", "Results"], ["settings", "Settings"]);
   if (can(role, "owner")) tabs.push(["staff", "Staff"], ["audit", "Audit log"]);
   return (
     <>
