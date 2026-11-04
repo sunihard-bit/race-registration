@@ -223,3 +223,24 @@ export async function removeStaff(fd: FormData) {
   audit(user.id, eventId, "staff.removed", str(fd.get("user_id")));
   done(eventId, "staff");
 }
+
+// ---------- Fees for other organizations ----------
+export async function addFee(fd: FormData) {
+  const { eventId, user } = await guard(fd, "manager");
+  const name = str(fd.get("name"), 120), org = str(fd.get("organization"), 120), amount = toCents(fd.get("amount"));
+  if (!name || !org || amount <= 0) redirect(`/organizer/events/${eventId}/fees?error=1`);
+  const races = fd.getAll("race_ids").map(String).filter((id) => one("SELECT 1 FROM races WHERE id=? AND event_id=?", id, eventId));
+  const bps = Math.round(Math.min(15, Math.max(0, parseFloat(str(fd.get("processing_percent")) || "0"))) * 100);
+  run(`INSERT INTO event_fees (id, event_id, name, organization, amount_cents, race_ids, member_exemption, member_label, deduct_processing, processing_bps)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    newId(), eventId, name, org, amount, JSON.stringify(races), fd.get("member_exemption") === "on" ? 1 : 0,
+    str(fd.get("member_label"), 80) || "Membership number", fd.get("deduct_processing") === "on" ? 1 : 0, bps);
+  audit(user.id, eventId, "fee.added", `${name} (${org})`);
+  done(eventId, "fees");
+}
+export async function deleteFee(fd: FormData) {
+  const { eventId, user } = await guard(fd, "manager");
+  run("DELETE FROM event_fees WHERE id=? AND event_id=?", str(fd.get("fee_id")), eventId);
+  audit(user.id, eventId, "fee.deleted", str(fd.get("fee_id")));
+  done(eventId, "fees");
+}

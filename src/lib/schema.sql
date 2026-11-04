@@ -218,3 +218,30 @@ CREATE TABLE IF NOT EXISTS profiles (
   consent_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Fees payable to other organizations (e.g. federation one-day licence), collected with the entry and passed on by the organizer.
+CREATE TABLE IF NOT EXISTS event_fees (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,                              -- e.g. "One-day race licence"
+  organization TEXT NOT NULL,                      -- e.g. "TT Triathlon Federation"
+  amount_cents INTEGER NOT NULL,
+  race_ids TEXT NOT NULL DEFAULT '[]',             -- JSON array; empty = all races
+  member_exemption INTEGER NOT NULL DEFAULT 1,     -- annual members can skip it by giving their number
+  member_label TEXT NOT NULL DEFAULT 'Membership number',
+  deduct_processing INTEGER NOT NULL DEFAULT 1,    -- card processing cost on this fee is deducted from what is passed on
+  processing_bps INTEGER NOT NULL DEFAULT 350,     -- processor rate in basis points (350 = 3.5%)
+  sort INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS registration_fees (
+  id TEXT PRIMARY KEY,
+  registration_id TEXT NOT NULL REFERENCES registrations(id) ON DELETE CASCADE,
+  fee_id TEXT REFERENCES event_fees(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,                              -- snapshot at time of registration
+  organization TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,                   -- 0 when exempt
+  exempt INTEGER NOT NULL DEFAULT 0,
+  member_number TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_regfees_reg ON registration_fees(registration_id);

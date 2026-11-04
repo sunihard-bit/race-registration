@@ -9,6 +9,7 @@ import {
 import { str, toCents } from "@/lib/format";
 import { markOrderPaid } from "@/lib/orders";
 import { saveProfile } from "@/lib/profile";
+import { feesForRace } from "@/lib/fees";
 
 export type RegState = { error?: string; values?: Record<string, string> };
 
@@ -91,9 +92,20 @@ export async function register(_: RegState, formData: FormData): Promise<RegStat
     discount = applyDiscount(tier.price_cents, v.d);
   }
   const donation = e.fundraising_enabled ? toCents(formData.get("donation")) : 0;
+
+  // Fees owed to other organizations (federation licences etc.). Members can be exempt with their number.
+  const thirdParty: { id: string; name: string; organization: string; amount: number; exempt: boolean; member: string }[] = [];
+  for (const f of feesForRace(e.id, race.id)) {
+    const exempt = !!f.member_exemption && formData.get(`fee_${f.id}`) === "member";
+    const member = str(formData.get(`fee_member_${f.id}`), 60);
+    if (exempt && !member) return fail(`Please enter your ${f.member_label.toLowerCase()} for ${f.organization}, or pay the ${f.name}.`);
+    thirdParty.push({ id: f.id, name: f.name, organization: f.organization, amount: exempt ? 0 : f.amount_cents, exempt, member: exempt ? member : "" });
+  }
+  const thirdPartyTotal = thirdParty.reduce((s, f) => s + f.amount, 0);
+
   const net = tier.price_cents - discount;
-  const fee = platformFee(net);
-  const total = net + donation + (e.fee_absorbed ? 0 : fee);
+  const fee = platformFee(net); // no platform fee on donations or pass-through fees
+  const total = net + donation + thirdPartyTotal + (e.fee_absorbed ? 0 : fee);
 
   const orderId = newId(12), regId = newId(12);
   db.transaction(() => {
@@ -102,8 +114,8 @@ export async function register(_: RegState, formData: FormData): Promise<RegStat
       run("INSERT INTO teams (id, race_id, name, invite_code, captain_user_id) VALUES (?,?,?,?,?)",
         teamId, race.id, teamToCreate.name, newId(4).replace(/[^A-Za-z0-9]/g, "X").toUpperCase().slice(0, 6), user.id);
     }
-    run(`INSERT INTO orders (id, event_id, user_id, buyer_email, subtotal_cents, discount_cents, donation_cents, fee_cents, total_cents, currency, discount_code_id)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`, orderId, e.id, user.id, user.email, tier.price_cents, discount, donation, fee, total, e.currency, discountId);
+    run(`INSERT INTO orders (id, event_id, user_id, buyer_email, subtotal_cents, discount_cents, donation_cents, fee_cents, third_party_cents, total_cents, currency, discount_code_id)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, orderId, e.id, user.id, user.email, tier.price_cents, discount, donation, fee, thirdPartyTotal, total, e.currency, discountId);
     run(`INSERT INTO registrations (id, order_id, event_id, race_id, user_id, first_name, last_name, email, gender, birth_year, dob_enc, phone_enc,
            emergency_enc, medical_enc, country, city, club, tshirt, answers, team_id, relay_leg, waiver_name, waiver_at, guardian_name,
            consent_privacy_at, consent_marketing, fundraising_goal_cents)
@@ -114,6 +126,10 @@ export async function register(_: RegState, formData: FormData): Promise<RegStat
       str(formData.get("tshirt"), 10), JSON.stringify(answers), teamId, leg, str(formData.get("waiver_name"), 120) || null,
       e.waiver_text ? new Date().toISOString() : null, guardian || null, formData.get("marketing") === "on" ? 1 : 0,
       toCents(formData.get("fundraising_goal")));
+    for (const f of thirdParty) {
+      run("INSERT INTO registration_fees (id, registration_id, fee_id, name, organization, amount_cents, exempt, member_number) VALUES (?,?,?,?,?,?,?,?)",
+        newId(), regId, f.id, f.name, f.organization, f.amount, f.exempt ? 1 : 0, f.member);
+    }
     if (donation > 0) run("INSERT INTO donations (id, event_id, registration_id, order_id, donor_name, amount_cents) VALUES (?,?,?,?,?,?)",
       newId(), e.id, regId, orderId, `${first} ${last}`, donation);
   })();

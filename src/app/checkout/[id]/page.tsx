@@ -5,6 +5,7 @@ import { eventById, paymentMethods } from "@/lib/events";
 import { money } from "@/lib/format";
 import { orderById } from "@/lib/orders";
 import { PROVIDERS } from "@/lib/payments";
+import { feesForOrder } from "@/lib/fees";
 
 const ERR: Record<string, string> = { method: "That payment method isn't available.", provider: "The payment provider didn't respond. Please try again." };
 
@@ -32,6 +33,9 @@ export default async function Checkout({ params, searchParams }: { params: Promi
           <tbody>
             {regs.map((r, i) => <tr key={i}><td>{r.first_name} {r.last_name}: {r.race}</td><td>{money(o.subtotal_cents, c)}</td></tr>)}
             {o.discount_cents > 0 && <tr><td>Discount</td><td>−{money(o.discount_cents, c)}</td></tr>}
+            {feesForOrder(o.id).map((f, i) => (
+              <tr key={`f${i}`}><td>{f.name} <span className="small muted">for {f.organization}</span>{f.exempt ? <div className="small muted">Member #{f.member_number}</div> : null}</td><td>{f.exempt ? "Member" : money(f.amount_cents, c)}</td></tr>
+            ))}
             {o.donation_cents > 0 && <tr><td>Donation</td><td>{money(o.donation_cents, c)}</td></tr>}
             {!e.fee_absorbed && o.fee_cents > 0 && <tr><td>Processing fee</td><td>{money(o.fee_cents, c)}</td></tr>}
             <tr><th>Total</th><th>{money(o.total_cents, c)}</th></tr>

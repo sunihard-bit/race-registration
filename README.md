@@ -11,6 +11,8 @@ Race registration for road races, triathlons, cycling, swims and relays, built f
 - Register with custom questions, T-shirt size, emergency contact, medical notes and a typed waiver signature (guardian signature for under-18s, minimum age per race)
 - Create or join **teams and relays** with an invite code or link; each relay leg can only be taken once per team
 - Discount codes, optional donation, personal fundraising page with a goal
+- Pay required fees to other organizations (e.g. a federation one-day licence) at checkout, or give an annual membership number instead
+- Save their details for faster registration next time
 - Pay by card (WiPay or First Atlantic Commerce), PayPal, or bank transfer/cash
 - Confirmation email with bib number; account page with all registrations
 - Download all their data, manage marketing consent, delete their account
@@ -20,6 +22,7 @@ Race registration for road races, triathlons, cycling, swims and relays, built f
 - Date-based price tiers (early bird, regular, late)
 - Custom registration questions, waiver, refund policy
 - Discount codes (percent or fixed, usage limits, expiry)
+- Fees for other organizations (federation licences etc.) per event or race, with member exemptions and a remittance CSV per fee
 - Dashboard: registrations per day, revenue, fees, donations, check-in progress, and breakdowns by race, age, gender, T-shirt size, town, country, club, discount code and payment method
 - Participant list with search and filters, bib editing, mark paid, cancel, CSV export (with or without medical info)
 - Race-day check-in screen for volunteers (search by bib, name or team)

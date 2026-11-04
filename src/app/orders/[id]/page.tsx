@@ -6,6 +6,7 @@ import { eventById } from "@/lib/events";
 import { money } from "@/lib/format";
 import { orderById } from "@/lib/orders";
 import { appUrl } from "@/lib/mailer";
+import { feesForOrder } from "@/lib/fees";
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -43,6 +44,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           )}
           {e.fundraising_enabled === 1 && <div className="small">Share your fundraising page: <Link href={`/fundraise/${r.id}`}>{appUrl()}/fundraise/{r.id}</Link></div>}
         </div>
+      ))}
+      {feesForOrder(o.id).map((f, i) => (
+        <p key={i} className="small">{f.name} ({f.organization}): {f.exempt ? `existing member #${f.member_number}` : money(f.amount_cents, o.currency)}</p>
       ))}
       <p><Link href="/account">Go to my account</Link></p>
     </div>
