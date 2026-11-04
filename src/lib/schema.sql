@@ -210,3 +210,11 @@ CREATE TABLE IF NOT EXISTS data_requests (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   completed_at TEXT
 );
+
+-- Optional saved profile for faster registration (participant opt-in; whole profile encrypted).
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  data_enc TEXT NOT NULL,
+  consent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

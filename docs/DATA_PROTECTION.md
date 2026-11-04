@@ -33,6 +33,7 @@ This is practical guidance, not legal advice. Have a Trinidad and Tobago attorne
 - **Exports** neutralise spreadsheet formula injection and are marked no-store.
 - **Passwords** are hashed with bcrypt (cost 12); sessions are random, httpOnly, SameSite cookies that expire after 14 days.
 - **Payment data** never touches the app; processors host the card form.
+- **Saved details** are opt-in (a tick box at registration), encrypted as a whole, editable and deletable at `/account/profile`, never include medical notes, and are deleted after 3 years without use.
 - **Erasure** anonymizes registrations and results, keeps anonymous payment amounts for accounting, and deletes the account.
 
 ## Operating checklist before launch

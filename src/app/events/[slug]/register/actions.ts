@@ -8,6 +8,7 @@ import {
 } from "@/lib/events";
 import { str, toCents } from "@/lib/format";
 import { markOrderPaid } from "@/lib/orders";
+import { saveProfile } from "@/lib/profile";
 
 export type RegState = { error?: string; values?: Record<string, string> };
 
@@ -117,6 +118,9 @@ export async function register(_: RegState, formData: FormData): Promise<RegStat
       newId(), e.id, regId, orderId, `${first} ${last}`, donation);
   })();
   audit(user.id, e.id, "registration.created", regId);
+  if (formData.get("save_profile") === "on") {
+    saveProfile(user.id, { ...values, emergency_name: emergencyName, emergency_phone: emergencyPhone, email, dob });
+  }
 
   if (total === 0) await markOrderPaid(orderId, "free", null, user.id);
   redirect(total === 0 ? `/orders/${orderId}` : `/checkout/${orderId}`);
