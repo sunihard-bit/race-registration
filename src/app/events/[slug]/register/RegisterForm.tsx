@@ -7,6 +7,7 @@ type Props = {
   eventId: string; raceId: string; raceKind: string; legs: string[]; waiver: string; fundraising: boolean; cause: string;
   questions: { id: string; label: string; kind: string; options: string[]; required: boolean }[];
   defaults: { name: string; email: string };
+  profile?: Record<string, string> | null;
   inviteCode?: string;
 };
 
@@ -15,13 +16,14 @@ export default function RegisterForm(p: Props) {
   const v = state.values ?? {};
   const [first, ...rest] = p.defaults.name.split(" ");
   const [teamMode, setTeamMode] = useState(v.team_mode || (p.inviteCode ? "join" : "create"));
-  const [dob, setDob] = useState(v.dob || "");
+  const [dob, setDob] = useState(v.dob || p.profile?.dob || "");
   const minor = dob && (Date.now() - new Date(dob).getTime()) / 31557600000 < 18;
-  const d = (k: string, fallback = "") => v[k] ?? fallback;
+  const d = (k: string, fallback = "") => v[k] ?? (p.profile?.[k] || fallback);
 
   return (
     <form action={action} key={JSON.stringify(state)}>
       {state.error && <div className="alert error" role="alert">{state.error}</div>}
+      {p.profile && !state.values && <div className="alert">We filled in your saved details. Check they&apos;re still right. <Link href="/account/profile">Manage saved details</Link></div>}
       <input type="hidden" name="event_id" value={p.eventId} />
       <input type="hidden" name="race_id" value={p.raceId} />
 
@@ -115,6 +117,7 @@ export default function RegisterForm(p: Props) {
 
       <section className="card stack" style={{ marginBottom: 16 }}>
         <label className="check"><input type="checkbox" name="privacy" required defaultChecked={v.privacy === "on"} /> I agree that my details are used to run this event, as described in the <Link href="/privacy" target="_blank">privacy notice</Link>.</label>
+        <label className="check"><input type="checkbox" name="save_profile" defaultChecked={state.values ? v.save_profile === "on" : !!p.profile} /> Save my details for faster registration next time (medical notes are never saved). You can edit or delete them anytime in My account.</label>
         <label className="check"><input type="checkbox" name="marketing" defaultChecked={v.marketing === "on"} /> Send me news about future events from this organizer (optional, you can opt out anytime).</label>
       </section>
 

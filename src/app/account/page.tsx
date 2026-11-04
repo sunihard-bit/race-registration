@@ -25,6 +25,7 @@ export default async function Account() {
         ))}
       </div>
       <h2>Privacy</h2>
+      <p><Link href="/account/profile">Saved details for faster registration</Link></p>
       <p><Link href="/account/data">Download or delete your data, and manage email preferences</Link></p>
     </>
   );

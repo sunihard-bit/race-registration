@@ -1,5 +1,6 @@
 import { decrypt } from "./crypto";
 import { all, audit, db, run } from "./db";
+import { getProfile } from "./profile";
 
 type RegRow = Record<string, unknown> & { id: string; dob_enc: string | null; phone_enc: string | null; emergency_enc: string | null; medical_enc: string | null };
 
@@ -20,7 +21,7 @@ export function exportUserData(userId: string, email: string) {
   const orders = all("SELECT id, event_id, subtotal_cents, discount_cents, donation_cents, fee_cents, total_cents, currency, status, payment_method, paid_at, created_at FROM orders WHERE user_id=?", userId);
   const donations = all("SELECT d.* FROM donations d JOIN orders o ON o.id=d.order_id WHERE o.user_id=?", userId);
   const requests = all("SELECT kind, status, created_at, completed_at FROM data_requests WHERE user_id=?", userId);
-  return { exported_at: new Date().toISOString(), user, registrations: regs, orders, donations, data_requests: requests };
+  return { exported_at: new Date().toISOString(), user, saved_profile: getProfile(userId), registrations: regs, orders, donations, data_requests: requests };
 }
 
 /** Removes personal data from a registration but keeps anonymous counts for organizer statistics. */
@@ -43,6 +44,7 @@ export function eraseUser(userId: string, email: string) {
     run("UPDATE teams SET captain_user_id=NULL WHERE captain_user_id=?", userId);
     run("DELETE FROM event_staff WHERE user_id=?", userId);
     run("DELETE FROM sessions WHERE user_id=?", userId);
+    run("DELETE FROM profiles WHERE user_id=?", userId);
     run("DELETE FROM users WHERE id=?", userId);
   })();
   audit(null, null, "privacy.erased", "user account erased on request");
@@ -56,5 +58,8 @@ export function applyRetention() {
   );
   for (const r of regs) anonymizeRegistration(r.id);
   if (regs.length) audit(null, null, "privacy.retention", `${regs.length} registrations anonymized`);
+  // Saved profiles unused for 3 years are deleted.
+  const stale = run("DELETE FROM profiles WHERE updated_at < datetime('now', '-3 years')").changes;
+  if (stale) audit(null, null, "privacy.retention", `${stale} unused saved profiles deleted`);
   return regs.length;
 }
