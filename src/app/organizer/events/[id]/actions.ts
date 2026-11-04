@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 import { requireEventRole, type StaffRole } from "@/lib/auth";
 import { all, audit, newId, one, run } from "@/lib/db";
 import { eventById } from "@/lib/events";
-import { str, toCents } from "@/lib/format";
-import { sendEmail } from "@/lib/mailer";
+import { money, str, toCents } from "@/lib/format";
+import { appUrl, sendEmail } from "@/lib/mailer";
 import { markOrderPaid } from "@/lib/orders";
 import { PROVIDERS } from "@/lib/payments";
+import { newPrepaidCode } from "@/lib/prepaid";
 
 async function guard(fd: FormData, min: StaffRole) {
   const eventId = str(fd.get("event_id"));
@@ -243,4 +244,33 @@ export async function deleteFee(fd: FormData) {
   run("DELETE FROM event_fees WHERE id=? AND event_id=?", str(fd.get("fee_id")), eventId);
   audit(user.id, eventId, "fee.deleted", str(fd.get("fee_id")));
   done(eventId, "fees");
+}
+
+// ---------- Prepaid codes (offline payment received, code issued) ----------
+export async function issuePrepaid(fd: FormData) {
+  const { eventId, user } = await guard(fd, "manager");
+  const e = eventById(eventId)!;
+  const payer = str(fd.get("payer_name"), 120), email = str(fd.get("payer_email"), 200).toLowerCase();
+  const amount = toCents(fd.get("amount"));
+  const raceId = str(fd.get("race_id")) || null;
+  if (!payer || amount <= 0) redirect(`/organizer/events/${eventId}/prepaid?error=1`);
+  if (raceId && !one("SELECT 1 FROM races WHERE id=? AND event_id=?", raceId, eventId)) return;
+  const code = newPrepaidCode();
+  run(`INSERT INTO prepaid_codes (id, event_id, code, race_id, amount_cents, payer_name, payer_email, payment_ref, created_by) VALUES (?,?,?,?,?,?,?,?,?)`,
+    newId(), eventId, code, raceId, amount, payer, email, str(fd.get("payment_ref"), 120), user.id);
+  audit(user.id, eventId, "prepaid.issued", `${code} for ${payer}, ${amount / 100}`);
+  if (email && fd.get("send_email") === "on") {
+    const race = raceId ? one<{ name: string }>("SELECT name FROM races WHERE id=?", raceId)?.name : null;
+    await sendEmail(email, `Your registration code for ${e.name}`,
+      `Hi ${payer},\n\nThanks, we received your payment of ${money(amount, e.currency)}.\n\nYour registration code is: ${code}\n\n` +
+      `Register at ${appUrl()}/events/${e.slug}${race ? ` (for ${race})` : ""}. At checkout, choose "I have a prepaid code" and enter it. The code can be used once.\n\n${e.name}`, eventId);
+  }
+  redirect(`/organizer/events/${eventId}/prepaid?issued=${code}`);
+}
+
+export async function voidPrepaid(fd: FormData) {
+  const { eventId, user } = await guard(fd, "manager");
+  run("UPDATE prepaid_codes SET void=1 WHERE id=? AND event_id=? AND used_order_id IS NULL", str(fd.get("prepaid_id")), eventId);
+  audit(user.id, eventId, "prepaid.void", str(fd.get("prepaid_id")));
+  done(eventId, "prepaid");
 }

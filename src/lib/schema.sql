@@ -245,3 +245,21 @@ CREATE TABLE IF NOT EXISTS registration_fees (
   member_number TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_regfees_reg ON registration_fees(registration_id);
+
+-- Prepaid codes: the participant pays the organizer offline (bank deposit, cash), the organizer issues a one-time code,
+-- and the participant uses it at checkout instead of a card.
+CREATE TABLE IF NOT EXISTS prepaid_codes (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  code TEXT NOT NULL UNIQUE,
+  race_id TEXT REFERENCES races(id) ON DELETE SET NULL,   -- null = any race
+  amount_cents INTEGER NOT NULL,                          -- what the organizer received
+  payer_name TEXT NOT NULL,
+  payer_email TEXT NOT NULL DEFAULT '',
+  payment_ref TEXT NOT NULL DEFAULT '',                   -- bank deposit slip / transfer reference
+  created_by TEXT REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  used_order_id TEXT REFERENCES orders(id),
+  used_at TEXT,
+  void INTEGER NOT NULL DEFAULT 0
+);
