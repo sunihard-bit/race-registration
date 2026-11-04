@@ -13,13 +13,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const sensitive = q.get("sensitive") === "1" && can(role, "manager");
   const race = q.get("race") || "", status = q.get("status") || "";
   const rows = all<Record<string, string | number | null>>(
-    `SELECT r.bib, r.first_name, r.last_name, r.email, r.gender, r.birth_year, r.city, r.country, r.club, r.tshirt, ra.name race,
+    `SELECT r.bib, r.confirm_code, r.first_name, r.last_name, r.email, r.gender, r.birth_year, r.city, r.country, r.club, r.tshirt, ra.name race,
             t.name team, r.relay_leg, r.status, r.checked_in_at, o.total_cents, o.payment_method, r.consent_marketing, r.answers,
             r.waiver_name, r.waiver_at, r.guardian_name, r.created_at, r.phone_enc, r.emergency_enc, r.medical_enc
      FROM registrations r JOIN races ra ON ra.id=r.race_id JOIN orders o ON o.id=r.order_id LEFT JOIN teams t ON t.id=r.team_id
      WHERE r.event_id=? AND (?='' OR r.race_id=?) AND (?='' OR r.status=?) ORDER BY r.bib`, id, race, race, status, status);
   const answerKeys = Array.from(new Set(rows.flatMap((r) => Object.keys(JSON.parse(String(r.answers || "{}"))))));
-  const base = ["bib", "first_name", "last_name", "email", "gender", "birth_year", "city", "country", "club", "tshirt", "race", "team", "relay_leg",
+  const base = ["bib", "confirm_code", "first_name", "last_name", "email", "gender", "birth_year", "city", "country", "club", "tshirt", "race", "team", "relay_leg",
     "status", "checked_in_at", "paid", "payment_method", "consent_marketing", "waiver_name", "waiver_at", "guardian_name", "created_at"];
   const extra = sensitive ? ["phone", "emergency_name", "emergency_phone", "medical"] : [];
   const lines = [[...base, ...extra, ...answerKeys].map(csvEscape).join(",")];

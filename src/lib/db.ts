@@ -36,10 +36,37 @@ function migrate(d: Database.Database) {
   if (!has("registrations", "chip")) exec("ALTER TABLE registrations ADD COLUMN chip TEXT NOT NULL DEFAULT ''");
   if (!has("registrations", "wave")) exec("ALTER TABLE registrations ADD COLUMN wave TEXT NOT NULL DEFAULT ''");
   if (!has("events", "timing_token")) exec("ALTER TABLE events ADD COLUMN timing_token TEXT");
+  if (!has("registrations", "confirm_code")) exec("ALTER TABLE registrations ADD COLUMN confirm_code TEXT");
+  d.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_reg_confirm_code ON registrations(confirm_code)");
+  // Give every confirmed registration a code (covers data from before codes existed, and seeded data).
+  const missing = d.prepare("SELECT id FROM registrations WHERE status='confirmed' AND confirm_code IS NULL").all() as { id: string }[];
+  const set = d.prepare("UPDATE registrations SET confirm_code=? WHERE id=? AND confirm_code IS NULL");
+  for (const r of missing) {
+    for (let i = 0; i < 5; i++) {
+      try { set.run(newConfirmCode(), r.id); break; } catch (e) { if (!/UNIQUE/i.test(String(e))) throw e; }
+    }
+  }
   if (!has("orders", "third_party_cents")) exec("ALTER TABLE orders ADD COLUMN third_party_cents INTEGER NOT NULL DEFAULT 0");
 }
 
 export const db: Database.Database = globalThis.__db ?? (globalThis.__db = open());
+
+export function newConfirmCode() {
+  // No 0/O, 1/I/L so codes are easy to read out at packet pickup. (Declared inside: open() runs before module consts.)
+  const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+  const b = crypto.randomBytes(6);
+  return "RK-" + Array.from(b, (x) => CODE_ALPHABET[x % CODE_ALPHABET.length]).join("");
+}
+
+/** Assigns confirmation codes to an order's confirmed registrations that don't have one yet. */
+export function assignConfirmCodes(orderId: string) {
+  const regs = all<{ id: string }>("SELECT id FROM registrations WHERE order_id=? AND status='confirmed' AND confirm_code IS NULL", orderId);
+  for (const r of regs) {
+    for (let i = 0; i < 5; i++) {
+      try { run("UPDATE registrations SET confirm_code=? WHERE id=?", newConfirmCode(), r.id); break; } catch (e) { if (!/UNIQUE/i.test(String(e))) throw e; }
+    }
+  }
+}
 
 export function newId(bytes = 9) {
   return crypto.randomBytes(bytes).toString("base64url");

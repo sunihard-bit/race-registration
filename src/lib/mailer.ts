@@ -13,7 +13,9 @@ function getTransport() {
 }
 
 /** Sends (or, with no SMTP configured, logs) an email and keeps a copy in the outbox. */
-export async function sendEmail(to: string, subject: string, body: string, eventId: string | null = null) {
+type Extra = { html?: string; attachments?: { filename: string; content: Buffer; cid?: string }[] };
+
+export async function sendEmail(to: string, subject: string, body: string, eventId: string | null = null, extra: Extra = {}) {
   const id = newId();
   run("INSERT INTO email_outbox (id, event_id, to_email, subject, body) VALUES (?,?,?,?,?)", id, eventId, to, subject, body);
   const t = getTransport();
@@ -23,7 +25,7 @@ export async function sendEmail(to: string, subject: string, body: string, event
     return;
   }
   try {
-    await t.sendMail({ from: process.env.MAIL_FROM, to, subject, text: body });
+    await t.sendMail({ from: process.env.MAIL_FROM, to, subject, text: body, html: extra.html, attachments: extra.attachments });
     run("UPDATE email_outbox SET status='sent' WHERE id=?", id);
   } catch (e) {
     console.error("[email] failed", e);
