@@ -2,7 +2,7 @@ import { all, one } from "./db";
 
 export type Event = {
   id: string; slug: string; owner_id: string; name: string; sport: string; description: string;
-  location: string; start_date: string; currency: string; status: string; waiver_text: string;
+  location: string; lat: number | null; lng: number | null; start_date: string; currency: string; status: string; waiver_text: string;
   refund_policy: string; payment_methods: string; manual_payment_instructions: string; fee_absorbed: number;
   fundraising_enabled: number; fundraising_cause: string; fundraising_goal_cents: number;
   retention_days: number; next_bib: number; created_at: string;
