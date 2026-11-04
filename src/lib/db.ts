@@ -25,11 +25,18 @@ function open() {
 function migrate(d: Database.Database) {
   const has = (table: string, col: string) =>
     (d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some((c) => c.name === col);
+  // Several build workers can open the DB at once, so ignore "duplicate column" from a lost race.
+  const exec = (sql: string) => {
+    try { d.exec(sql); } catch (e) { if (!/duplicate column/i.test(String(e))) throw e; }
+  };
   if (!has("event_fees", "deduct_processing")) {
-    d.exec("ALTER TABLE event_fees ADD COLUMN deduct_processing INTEGER NOT NULL DEFAULT 1");
-    d.exec("ALTER TABLE event_fees ADD COLUMN processing_bps INTEGER NOT NULL DEFAULT 350");
+    exec("ALTER TABLE event_fees ADD COLUMN deduct_processing INTEGER NOT NULL DEFAULT 1");
+    exec("ALTER TABLE event_fees ADD COLUMN processing_bps INTEGER NOT NULL DEFAULT 350");
   }
-  if (!has("orders", "third_party_cents")) d.exec("ALTER TABLE orders ADD COLUMN third_party_cents INTEGER NOT NULL DEFAULT 0");
+  if (!has("registrations", "chip")) exec("ALTER TABLE registrations ADD COLUMN chip TEXT NOT NULL DEFAULT ''");
+  if (!has("registrations", "wave")) exec("ALTER TABLE registrations ADD COLUMN wave TEXT NOT NULL DEFAULT ''");
+  if (!has("events", "timing_token")) exec("ALTER TABLE events ADD COLUMN timing_token TEXT");
+  if (!has("orders", "third_party_cents")) exec("ALTER TABLE orders ADD COLUMN third_party_cents INTEGER NOT NULL DEFAULT 0");
 }
 
 export const db: Database.Database = globalThis.__db ?? (globalThis.__db = open());
