@@ -288,3 +288,20 @@ CREATE TABLE IF NOT EXISTS backups (
   size_bytes INTEGER,
   error TEXT
 );
+
+-- Money moved between the platform and an organizer for an event. Card payments land in the platform's merchant
+-- account, so the platform pays organizers out; organizers who took cash or bank transfers owe the platform its fee.
+CREATE TABLE IF NOT EXISTS payouts (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL REFERENCES events(id),
+  kind TEXT NOT NULL,                              -- payout (platform → organizer) | received (organizer → platform) | deduction (e.g. featured fee)
+  amount_cents INTEGER NOT NULL,                   -- always positive; kind gives the direction
+  paid_on TEXT NOT NULL,                           -- YYYY-MM-DD
+  method TEXT NOT NULL DEFAULT '',
+  reference TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  created_by TEXT REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  void INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_payouts_event ON payouts(event_id);

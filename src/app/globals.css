@@ -57,3 +57,6 @@ th { color: var(--muted); font-weight: 600; font-size: .82rem; text-transform: u
 .progress > div { height: 100%; background: var(--brand); }
 details summary { cursor: pointer; font-weight: 600; }
 @media (max-width: 600px) { h1 { font-size: 1.45rem; } .card { padding: 14px; } }
+.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.statement { width: 100%; }
+table.statement tr.sum td { border-top: 2px solid #ddd; font-weight: 600; }

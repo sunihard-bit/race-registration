@@ -10,6 +10,7 @@ import { markOrderPaid } from "@/lib/orders";
 import { PROVIDERS } from "@/lib/payments";
 import { newPrepaidCode } from "@/lib/prepaid";
 import { requestFeatured } from "@/lib/featured";
+import { encrypt } from "@/lib/crypto";
 import { parseDelimited, parseResults, saveResults, timingToken } from "@/lib/timing";
 
 async function guard(fd: FormData, min: StaffRole) {
@@ -302,4 +303,16 @@ export async function voidPrepaid(fd: FormData) {
   run("UPDATE prepaid_codes SET void=1 WHERE id=? AND event_id=? AND used_order_id IS NULL", str(fd.get("prepaid_id")), eventId);
   audit(user.id, eventId, "prepaid.void", str(fd.get("prepaid_id")));
   done(eventId, "prepaid");
+}
+
+// ---------- Payouts ----------
+export async function savePayoutDetails(fd: FormData) {
+  const { eventId, user } = await guard(fd, "owner");
+  const d = {
+    account_name: str(fd.get("account_name"), 120), bank: str(fd.get("bank"), 120), branch: str(fd.get("branch"), 120),
+    account_number: str(fd.get("account_number"), 40), account_type: str(fd.get("account_type"), 20), notes: str(fd.get("notes"), 500),
+  };
+  run("UPDATE events SET payout_details_enc=? WHERE id=?", encrypt(JSON.stringify(d)), eventId);
+  audit(user.id, eventId, "payout.details_updated", "");
+  done(eventId, "payouts");
 }
