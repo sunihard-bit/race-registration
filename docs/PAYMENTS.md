@@ -14,7 +14,7 @@ Other options worth a look: 2Checkout (Verifone) and other international gateway
 
 ## Fees
 
-The platform fee is set with `PLATFORM_FEE_PERCENT` and `PLATFORM_FEE_FIXED_CENTS` (default 2.5% + TT$2.00). Organizers choose to pass it to participants (shown as a line at checkout) or absorb it. Processor fees (WiPay, FAC, PayPal) are charged by the processor on top of this, so price the platform fee with that in mind.
+The platform fee is set with `PLATFORM_FEE_PERCENT` and `PLATFORM_FEE_FIXED_CENTS` (default 4% + TT$2.00, chosen so card processing of about 3–4% does not eat the margin). Organizers choose to pass it to participants (shown as a line at checkout) or absorb it. Processor fees (WiPay, FAC, PayPal) are charged by the processor on top of this, so price the platform fee with that in mind.
 
 ## Security notes
 

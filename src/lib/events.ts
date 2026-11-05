@@ -49,10 +49,10 @@ export function relayLegs(r: Race): string[] {
   try { return JSON.parse(r.relay_legs); } catch { return []; }
 }
 
-/** Platform fee (configurable; default 2.5% + TT$2). */
+/** Platform fee (configurable; default 4% + TT$2). */
 export function platformFee(subtotalCents: number) {
   if (subtotalCents <= 0) return 0;
-  const pct = parseFloat(process.env.PLATFORM_FEE_PERCENT ?? "2.5");
+  const pct = parseFloat(process.env.PLATFORM_FEE_PERCENT ?? "4");
   const fixed = parseInt(process.env.PLATFORM_FEE_FIXED_CENTS ?? "200", 10);
   return Math.round((subtotalCents * pct) / 100) + fixed;
 }
