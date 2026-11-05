@@ -49,6 +49,7 @@ function migrate(d: Database.Database) {
   if (!has("events", "lat")) { exec("ALTER TABLE events ADD COLUMN lat REAL"); exec("ALTER TABLE events ADD COLUMN lng REAL"); }
   if (!has("events", "featured_until")) exec("ALTER TABLE events ADD COLUMN featured_until TEXT");
   if (!has("orders", "third_party_cents")) exec("ALTER TABLE orders ADD COLUMN third_party_cents INTEGER NOT NULL DEFAULT 0");
+  if (!has("events", "payout_details_enc")) exec("ALTER TABLE events ADD COLUMN payout_details_enc TEXT");
 }
 
 export const db: Database.Database = globalThis.__db ?? (globalThis.__db = open());

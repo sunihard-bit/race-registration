@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import { all } from "@/lib/db";
 import { FEATURED_WEEKS } from "@/lib/featured";
@@ -21,7 +22,10 @@ export default async function Admin() {
      WHERE f.status!='pending' ORDER BY f.decided_at DESC LIMIT 20`);
   return (
     <div className="stack" style={{ maxWidth: 860 }}>
-      <h1>Admin</h1>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h1>Admin</h1>
+        <Link className="btn" href="/admin/payouts">Payouts</Link>
+      </div>
       <section className="card">
         <h2>Featured requests</h2>
         {pending.length === 0 && <p className="muted">No requests waiting.</p>}

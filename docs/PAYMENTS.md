@@ -21,3 +21,14 @@ The platform fee is set with `PLATFORM_FEE_PERCENT` and `PLATFORM_FEE_FIXED_CENT
 - Card details are typed on the processor's page, so the app never sees card numbers. This keeps you in the lightest PCI DSS scope (SAQ A).
 - Every return from a processor is verified on the server (hash or API call), and the amount is checked against the order before it is marked paid.
 - `markOrderPaid` is idempotent, so a repeated callback does not double-assign bibs.
+
+## Payouts to organizers
+
+Card payments (WiPay, FAC, PayPal) land in the platform's merchant account, so the platform pays each organizer afterwards.
+
+- **What's owed** = card money collected − platform fees on card orders − platform fees on cash, bank and prepaid-code orders (that money went straight to the organizer). Donations and fees for other organizations are included, because the organizer passes them on. Card processing costs are the platform's, covered by the platform fee.
+- **Organizers** see a statement on their event's **Payouts** tab, download an order-by-order CSV, and the event owner enters the bank account to pay into (stored encrypted).
+- **Admins** see every balance at `/admin/payouts`. Open an event to see the organizer's bank details, then record a payout, money received from the organizer, or a deduction (e.g. a featured listing fee). Mistakes are voided, not deleted. Recording a payout can email the organizer. Recording does not move money; send the bank transfer first.
+- Pay out after race day so there is room for refunds and chargebacks.
+
+Holding organizers' money may need registration with the Central Bank of Trinidad and Tobago. Asking WiPay or FAC about split payouts to sub-merchants, so the processor pays organizers directly, is the cleaner long-term setup.
