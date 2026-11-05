@@ -19,6 +19,6 @@ services:
       - key: PAYMENTS_SANDBOX
         value: "1"
       - key: PLATFORM_FEE_PERCENT
-        value: "2.5"
+        value: "4"
       - key: PLATFORM_FEE_FIXED_CENTS
         value: "200"
