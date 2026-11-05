@@ -276,3 +276,15 @@ CREATE TABLE IF NOT EXISTS featured_requests (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   decided_at TEXT
 );
+
+-- Off-site backup runs (see src/lib/backup.ts and docs/BACKUPS.md).
+CREATE TABLE IF NOT EXISTS backups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at TEXT NOT NULL DEFAULT (datetime('now')),
+  finished_at TEXT,
+  status TEXT NOT NULL DEFAULT 'running', -- running | ok | failed
+  trigger TEXT NOT NULL DEFAULT 'schedule',
+  object_key TEXT,
+  size_bytes INTEGER,
+  error TEXT
+);

@@ -2,7 +2,8 @@ import { requireAdmin } from "@/lib/admin";
 import { all } from "@/lib/db";
 import { FEATURED_WEEKS } from "@/lib/featured";
 import { date, money } from "@/lib/format";
-import { decide, featureNow, stopFeatured } from "./actions";
+import { backupNow, decide, featureNow, stopFeatured } from "./actions";
+import { backupConfigured, recentBackups } from "@/lib/backup";
 
 export const metadata = { title: "Admin" };
 
@@ -55,6 +56,26 @@ export default async function Admin() {
           <select name="weeks" style={{ maxWidth: 140 }}>{FEATURED_WEEKS.map((w) => <option key={w} value={w}>{w} week{w > 1 ? "s" : ""}</option>)}</select>
           <button className="secondary">Feature an event</button>
         </form>
+      </section>
+
+      <section className="card">
+        <h2>Backups</h2>
+        {!backupConfigured() ? (
+          <p className="small">Off-site backups aren&apos;t set up yet. Add the <code>BACKUP_S3_*</code> settings in your host (see docs/BACKUPS.md) and the site will back itself up every night.</p>
+        ) : (
+          <>
+            <p className="small muted">An encrypted copy of the whole database goes to your backup storage about once a day and is kept for 30 days.</p>
+            <table><tbody>{recentBackups().map((b) => (
+              <tr key={b.id}>
+                <td>{b.started_at} UTC</td>
+                <td><span className={`badge ${b.status === "ok" ? "" : b.status === "failed" ? "warn" : "grey"}`}>{b.status}</span></td>
+                <td className="small">{b.trigger}</td>
+                <td className="small muted">{b.status === "failed" ? b.error : b.size_bytes ? `${Math.round(b.size_bytes / 1024)} KB` : ""}</td>
+              </tr>
+            ))}</tbody></table>
+            <form action={backupNow} style={{ marginTop: 10 }}><button className="secondary">Back up now</button></form>
+          </>
+        )}
       </section>
 
       {recent.length > 0 && (
