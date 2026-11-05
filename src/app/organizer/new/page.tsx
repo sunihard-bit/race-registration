@@ -39,6 +39,7 @@ export default async function NewEvent() {
         </div>
         <div className="field"><label>Location</label><input name="location" placeholder="e.g. Queen's Park Savannah, Port of Spain" /></div>
         <div className="field"><label>Description</label><textarea name="description" /></div>
+        <p className="small muted">By creating an event you agree to the <a href="/terms#organizers" target="_blank">organizer terms</a>, including how published events are listed.</p>
         <button>Create and add races</button>
       </form>
     </div>
