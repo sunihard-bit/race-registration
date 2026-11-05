@@ -35,6 +35,7 @@ export default async function Participants({ params, searchParams }: { params: P
         <select name="status" defaultValue={status} style={{ maxWidth: 180 }}><option value="">Any status</option><option value="confirmed">Confirmed</option><option value="pending">Awaiting payment</option><option value="cancelled">Cancelled</option></select>
         <button>Filter</button>
         <a className="btn secondary" href={`/organizer/events/${id}/export?${qs}`}>Export CSV</a>
+        {manager && <a className="btn secondary" href={`/organizer/events/${id}/raceday`} title="Printable check-in sheet, start list and emergency contacts in one zip. Logged.">Race-day pack</a>}
         {manager && <a className="btn secondary" href={`/organizer/events/${id}/export?${qs}&sensitive=1`} title="Includes phone, emergency contact and medical notes. Logged.">Export with medical info</a>}
       </form>
       <p className="small muted">{rows.length} shown</p>

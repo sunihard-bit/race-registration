@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { audit, one, run } from "@/lib/db";
 import { decideRequest, extendFeatured, FEATURED_WEEKS } from "@/lib/featured";
 import { str } from "@/lib/format";
+import { backupConfigured, runBackup } from "@/lib/backup";
 
 export async function decide(fd: FormData) {
   const admin = await requireAdmin();
@@ -25,5 +26,13 @@ export async function stopFeatured(fd: FormData) {
   const eventId = str(fd.get("event_id"));
   run("UPDATE events SET featured_until=NULL WHERE id=?", eventId);
   audit(admin.id, eventId, "featured.stopped", "");
+  revalidatePath("/admin");
+}
+
+export async function backupNow() {
+  const admin = await requireAdmin();
+  if (!backupConfigured()) return;
+  await runBackup("manual");
+  audit(admin.id, null, "backup.manual", "");
   revalidatePath("/admin");
 }

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "data", "app.db");
+export const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "data", "app.db");
 
 declare global {
   // eslint-disable-next-line no-var

@@ -1,4 +1,4 @@
-import { requireEventRole } from "@/lib/auth";
+import { can, requireEventRole } from "@/lib/auth";
 import { all, one } from "@/lib/db";
 import { checkIn } from "../actions";
 import { normalizeCode } from "@/lib/confirm";
@@ -6,7 +6,7 @@ import { normalizeCode } from "@/lib/confirm";
 export default async function CheckIn({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ q?: string }> }) {
   const { id } = await params;
   const { q = "" } = await searchParams;
-  await requireEventRole(id, "checkin");
+  const { role } = await requireEventRole(id, "checkin");
   const counts = one<{ done: number | null; total: number }>("SELECT SUM(checked_in_at IS NOT NULL) done, COUNT(*) total FROM registrations WHERE event_id=? AND status='confirmed'", id)!;
   const code = normalizeCode(q);
   const rows = q
@@ -18,6 +18,12 @@ export default async function CheckIn({ params, searchParams }: { params: Promis
     : [];
   return (
     <div style={{ maxWidth: 640 }}>
+      {can(role, "manager") && (
+        <div className="card small" style={{ marginBottom: 12 }}>
+          <strong>No internet at the venue?</strong> Download the race-day pack the night before: a printable check-in sheet, start list,
+          participant list and a confidential emergency-contacts file. <a href={`/organizer/events/${id}/raceday`}>Download race-day pack (.zip)</a>
+        </div>
+      )}
       <p><strong>{counts.done ?? 0}</strong> of {counts.total} checked in</p>
       <div className="progress" style={{ marginBottom: 16 }}><div style={{ width: `${counts.total ? ((counts.done ?? 0) / counts.total) * 100 : 0}%` }} /></div>
       <form className="row" style={{ marginBottom: 16 }}>

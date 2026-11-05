@@ -30,6 +30,7 @@ Race registration for road races, triathlons, cycling, swims and relays, built f
 - Team/relay view showing which teams are complete and which legs are missing
 - Email participants (everyone, unpaid, per race, or marketing opt-ins only)
 - Upload results from CSV; public results page with search
+- Nightly encrypted off-site backups (Cloudflare R2 or any S3 storage) with restore script and status on /admin; race-day pack zip for organizers (printable check-in sheet, start list, emergency contacts). See docs/BACKUPS.md
 - Featured events: organizers request paid placement (FEATURED_PRICE_PER_WEEK_CENTS, default 150.00/week) from Settings; platform admins approve, schedule or stop it at /admin; featured events show in a labelled strip on Find a race. Make an admin with `npm run make-admin -- email` (demo: admin@example.com)
 - "Near me" search: runners share their location (rounded, never stored) to list events by distance; organizers drop a map pin in Settings (OpenStreetMap)
 - Confirmation code (e.g. RK-7F3K9Q) and QR code for every participant, on the confirmation page and in the email; staff scan it with a phone camera to open that person's check-in
