@@ -5,6 +5,7 @@ Stripe does not onboard merchants in Trinidad and Tobago, so the app uses a plug
 | Processor | Good for | Settles in | Status in this code |
 |---|---|---|---|
 | **WiPay** | Local Visa/Mastercard, TT-based, quick sign-up | TTD to a local bank | Adapter built. Verify field names and the response hash against WiPay's current docs, then test in their sandbox. |
+| **Wam** (WamNow Technologies) | Local cards (3% + TT$1.50) and Wam balance (2%), free payouts | TTD to the organizer's own Wam account | Adapter built from docs.wam.money, **per organizer** and off unless `WAM_ENABLED=1`. Not yet tested against Wam's staging portal. See below. |
 | **First Atlantic Commerce (FAC / PowerTranz)** | Card payments through a Caribbean bank merchant account (e.g. Republic, First Citizens, Scotiabank, RBC), 3-D Secure | TTD or USD | Adapter built on the PowerTranz hosted-page flow. FAC gives you exact endpoints and page set names at onboarding; confirm before go-live. |
 | **PayPal** | Overseas participants | USD (PayPal has no TTD) | Adapter built (Orders v2). Prices are converted using `PAYPAL_TTD_PER_USD`. Check that a PayPal account in your country can **receive** and withdraw funds before relying on it. |
 | **Bank transfer / cash / Linx at pickup** | Clubs and small events, people without cards | Direct to organizer | Built. Participant gets instructions and a reference; organizer clicks **Mark paid**. |
@@ -21,3 +22,23 @@ The platform fee is set with `PLATFORM_FEE_PERCENT` and `PLATFORM_FEE_FIXED_CENT
 - Card details are typed on the processor's page, so the app never sees card numbers. This keeps you in the lightest PCI DSS scope (SAQ A).
 - Every return from a processor is verified on the server (hash or API call), and the amount is checked against the order before it is marked paid.
 - `markOrderPaid` is idempotent, so a repeated callback does not double-assign bibs.
+
+## Wam (per-organizer)
+
+Wam is built the per-organizer way: money goes straight into the organizer's own Wam business account, and the platform fee is billed monthly. The platform holds no Wam account of its own.
+
+**Turned off by default.** Set `WAM_ENABLED=1` only after Wam confirms in writing that (1) individuals (a race director or club treasurer) may open an account and collect event entry fees, and (2) a registration platform may create payments on organizers' accounts with their API keys. `WAM_ENVIRONMENT` is `staging` (default) or `production`.
+
+**Organizer setup** (Settings, Wam account, event owner only):
+1. In the Wam Business Portal, Developers, Merchant Keys: copy the Business ID and create an API key.
+2. Add a webhook endpoint with the URL shown in Settings (`/api/payments/webhooks/wam/<event id>`) for `payment_intent.succeeded`, and paste the `whsec_` signing secret back into Settings.
+3. Tick "Card or Wam (Wam)" under Payments.
+
+Keys are stored AES-256-GCM encrypted in `events.wam_creds_enc` and are never shown again. Connecting, changing and disconnecting are audited.
+
+**Flow** (`src/lib/payments/wam.ts`):
+- Checkout creates a payment intent: `POST /api/public/payment-intents` with `amountCents`, `currency`, `orderReference` (our order id), `returnUrl`. Requests are signed with `X-WAM-Api-Key`, `X-WAM-Timestamp` and `X-WAM-Signature` (HMAC-SHA256 of `{timestamp}.{body}` keyed with the API key). The participant is sent to Wam's `checkoutUrl`.
+- On return, and on the webhook, the app calls `GET /api/public/payment-intents/{paymentId}` and confirms the order only if the status is `succeeded` and the amount and currency match. The redirect's query string is never trusted.
+- The webhook checks `x-wam-signature` (HMAC-SHA256 of `{timestamp}.{rawBody}` with the `whsec_` secret, 5-minute window) and only confirms orders of its own event. Duplicate deliveries are harmless.
+
+**Still to confirm with Wam:** the redirect parameters differ slightly between their quickstart and payment-intents pages (we don't rely on them); whether the Business ID must be sent on raw REST calls (the docs show only the three headers); refunds are not wired up yet.

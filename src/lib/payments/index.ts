@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { PaymentProvider, ReturnResult } from "./types";
 import { appUrl } from "../mailer";
 import { orderById } from "../orders";
+import { wam } from "./wam";
 
 const cb = (id: string) => `${appUrl()}/api/payments/${id}`;
 const amount = (cents: number) => (cents / 100).toFixed(2);
@@ -192,5 +193,7 @@ function safeEqual(a: string, b: string) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 
-export const PROVIDERS: PaymentProvider[] = [wipay, fac, paypal, manual, sandbox];
+export const PROVIDERS: PaymentProvider[] = [wipay, wam, fac, paypal, manual, sandbox];
 export const provider = (id: string) => PROVIDERS.find((p) => p.id === id);
+/** Whether a provider can take payments for this event (per-organizer providers need the event's own keys). */
+export const availableFor = (p: PaymentProvider, eventId: string) => (p.configuredFor ? p.configuredFor(eventId) : p.configured());

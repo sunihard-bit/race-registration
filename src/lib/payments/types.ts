@@ -13,6 +13,8 @@ export interface PaymentProvider {
   label: string;
   description: string;
   configured(): boolean;
+  /** For per-organizer providers: whether this event has connected its own account. Defaults to configured(). */
+  configuredFor?(eventId: string): boolean;
   start(order: Order, eventName: string): Promise<StartResult>;
   /** Handles the browser return / webhook from the provider. Must verify authenticity. */
   handleReturn?(req: Request): Promise<ReturnResult>;

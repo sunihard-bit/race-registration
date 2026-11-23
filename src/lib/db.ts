@@ -48,6 +48,7 @@ function migrate(d: Database.Database) {
   }
   if (!has("events", "lat")) { exec("ALTER TABLE events ADD COLUMN lat REAL"); exec("ALTER TABLE events ADD COLUMN lng REAL"); }
   if (!has("events", "featured_until")) exec("ALTER TABLE events ADD COLUMN featured_until TEXT");
+  if (!has("events", "wam_creds_enc")) exec("ALTER TABLE events ADD COLUMN wam_creds_enc TEXT"); // encrypted JSON, organizer's own Wam keys
   if (!has("orders", "third_party_cents")) exec("ALTER TABLE orders ADD COLUMN third_party_cents INTEGER NOT NULL DEFAULT 0");
 }
 
