@@ -3,7 +3,7 @@ import { currentUser } from "@/lib/auth";
 import { audit, run } from "@/lib/db";
 import { eventById, paymentMethods } from "@/lib/events";
 import { orderById } from "@/lib/orders";
-import { provider } from "@/lib/payments";
+import { availableFor, provider } from "@/lib/payments";
 import { sameOrigin } from "@/lib/http";
 
 export async function POST(req: Request) {
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   const ev = eventById(order.event_id)!;
   const p = provider(String(form.get("provider")));
-  if (!p || !p.configured() || !(paymentMethods(ev).includes(p.id) || p.id === "sandbox")) return back("error=method");
+  if (!p || !availableFor(p, ev.id) || !(paymentMethods(ev).includes(p.id) || p.id === "sandbox")) return back("error=method");
 
   run("UPDATE orders SET payment_method=? WHERE id=?", p.id, order.id);
   audit(user.id, ev.id, "payment.start", `${order.id} via ${p.id}`);

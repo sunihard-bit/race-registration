@@ -1,16 +1,19 @@
-import { requireEventRole } from "@/lib/auth";
+import { can, requireEventRole } from "@/lib/auth";
 import { eventById, paymentMethods } from "@/lib/events";
 import { SPORTS } from "@/lib/format";
-import { PROVIDERS } from "@/lib/payments";
-import { askToFeature, saveSettings, setStatus } from "../actions";
+import { PROVIDERS, availableFor } from "@/lib/payments";
+import { maskKey, wamCreds, wamEnabled, wamWebhookUrl } from "@/lib/payments/wam";
+import { askToFeature, saveSettings, saveWam, setStatus } from "../actions";
 import { FEATURED_WEEKS, featuredWeekCents, pendingRequest } from "@/lib/featured";
 import { date, money } from "@/lib/format";
 import LocationPicker from "@/components/LocationPicker";
 
 export default async function Settings({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireEventRole(id, "manager");
+  const { role } = await requireEventRole(id, "manager");
   const e = eventById(id)!;
+  const wamOn = wamEnabled();
+  const wc = wamOn ? wamCreds(id) : null;
   const pm = paymentMethods(e);
   const pending = pendingRequest(id);
   const featuredNow = e.featured_until && e.featured_until >= new Date().toISOString().slice(0, 10);
@@ -43,6 +46,32 @@ export default async function Settings({ params }: { params: Promise<{ id: strin
           </form>
         )}
       </div>
+      {wamOn && (
+        <div className="card">
+          <h3>Wam account</h3>
+          <p className="small">Participants who pick Wam pay straight into <strong>your own</strong> Wam business account (cards 3% + TT$1.50, Wam balance 2%, charged by Wam). We bill our platform fee monthly.</p>
+          {wc ? (
+            <p className="small"><span className="badge">Connected</span> Business ID {wc.businessId || "not given"}, API key {maskKey(wc.apiKey)}, webhook secret {wc.webhookSecret ? "set" : <strong>missing</strong>}.</p>
+          ) : (
+            <p className="small muted">Not connected. In the Wam Business Portal go to Developers, Merchant Keys: copy your Business ID and create an API key.</p>
+          )}
+          {can(role, "owner") ? (
+            <form action={saveWam} className="stack">
+              <input type="hidden" name="event_id" value={id} />
+              <div className="field"><label>Business ID</label><input name="business_id" defaultValue={wc?.businessId ?? ""} placeholder="a1b2c3d4-…" /></div>
+              <div className="field"><label>API key {wc && <span className="small muted">(leave blank to keep the current key)</span>}</label><input name="api_key" type="password" autoComplete="off" /></div>
+              <div className="field"><label>Webhook URL (add it in Wam under Developers, Merchant Keys, Webhooks, for payment_intent.succeeded)</label>
+                <input readOnly value={wamWebhookUrl(id)} /></div>
+              <div className="field"><label>Webhook signing secret (starts with whsec_) {wc?.webhookSecret && <span className="small muted">(leave blank to keep)</span>}</label><input name="webhook_secret" type="password" autoComplete="off" /></div>
+              <div className="row">
+                <button className="secondary">Save Wam keys</button>
+                {wc && <button className="secondary" name="disconnect" value="1">Disconnect</button>}
+              </div>
+              <p className="small muted">Keys are stored encrypted and never shown again. Only the event owner can change them.</p>
+            </form>
+          ) : <p className="small muted">Only the event owner can connect or change the Wam account.</p>}
+        </div>
+      )}
       <form action={saveSettings} className="card">
         <input type="hidden" name="event_id" value={id} />
         <h3>Event details</h3>
@@ -61,10 +90,10 @@ export default async function Settings({ params }: { params: Promise<{ id: strin
         <div className="field"><label>Refund and transfer policy</label><textarea name="refund_policy" defaultValue={e.refund_policy} /></div>
 
         <h3>Payments</h3>
-        {PROVIDERS.filter((p) => p.id !== "sandbox").map((p) => (
+        {PROVIDERS.filter((p) => p.id !== "sandbox" && (p.id !== "wam" || wamOn)).map((p) => (
           <label key={p.id} className="check">
             <input type="checkbox" name={`pm_${p.id}`} defaultChecked={pm.includes(p.id)} />
-            <span>{p.label} {!p.configured() && <span className="badge warn">needs API keys</span>}<br /><span className="small muted">{p.description}</span></span>
+            <span>{p.label} {!availableFor(p, id) && <span className="badge warn">{p.configuredFor ? "connect your account below" : "needs API keys"}</span>}<br /><span className="small muted">{p.description}</span></span>
           </label>
         ))}
         <div className="field" style={{ marginTop: 10 }}><label>Bank transfer / cash instructions</label>

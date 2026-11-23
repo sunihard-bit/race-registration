@@ -8,6 +8,7 @@ import { money, str, toCents } from "@/lib/format";
 import { appUrl, sendEmail } from "@/lib/mailer";
 import { markOrderPaid } from "@/lib/orders";
 import { PROVIDERS } from "@/lib/payments";
+import { saveWamCreds, wamCreds, wamEnabled } from "@/lib/payments/wam";
 import { newPrepaidCode } from "@/lib/prepaid";
 import { requestFeatured } from "@/lib/featured";
 import { parseDelimited, parseResults, saveResults, timingToken } from "@/lib/timing";
@@ -36,6 +37,30 @@ export async function saveSettings(fd: FormData) {
   const ok = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
   run("UPDATE events SET lat=?, lng=? WHERE id=?", ok ? lat : null, ok ? lng : null, eventId);
   audit(user.id, eventId, "event.settings", "");
+  done(eventId, "settings");
+}
+
+/** Connects the organizer's own Wam account to this event (owner only; keys stored encrypted). */
+export async function saveWam(fd: FormData) {
+  const { eventId, user } = await guard(fd, "owner");
+  if (!wamEnabled()) return;
+  if (fd.get("disconnect") === "1") {
+    saveWamCreds(eventId, null);
+    const ev = eventById(eventId)!;
+    const methods = (JSON.parse(ev.payment_methods) as string[]).filter((m) => m !== "wam");
+    run("UPDATE events SET payment_methods=? WHERE id=?", JSON.stringify(methods.length ? methods : ["manual"]), eventId);
+    audit(user.id, eventId, "wam.disconnect", "");
+    return done(eventId, "settings");
+  }
+  const old = wamCreds(eventId);
+  const apiKey = str(fd.get("api_key"), 200) || old?.apiKey || "";
+  if (!apiKey) return;
+  saveWamCreds(eventId, {
+    businessId: str(fd.get("business_id"), 64),
+    apiKey,
+    webhookSecret: str(fd.get("webhook_secret"), 200) || old?.webhookSecret || "",
+  });
+  audit(user.id, eventId, "wam.connect", old ? "keys updated" : "connected");
   done(eventId, "settings");
 }
 

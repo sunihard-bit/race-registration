@@ -4,7 +4,7 @@ import { all } from "@/lib/db";
 import { eventById, paymentMethods } from "@/lib/events";
 import { money } from "@/lib/format";
 import { orderById } from "@/lib/orders";
-import { PROVIDERS } from "@/lib/payments";
+import { PROVIDERS, availableFor } from "@/lib/payments";
 import { feesForOrder } from "@/lib/fees";
 import { redeemPrepaid } from "./actions";
 
@@ -21,7 +21,7 @@ export default async function Checkout({ params, searchParams }: { params: Promi
   const regs = all<{ first_name: string; last_name: string; race: string }>(
     "SELECT r.first_name, r.last_name, ra.name race FROM registrations r JOIN races ra ON ra.id=r.race_id WHERE order_id=?", o.id);
   const enabled = paymentMethods(e);
-  const methods = PROVIDERS.filter((p) => p.configured() && (enabled.includes(p.id) || p.id === "sandbox"));
+  const methods = PROVIDERS.filter((p) => availableFor(p, e.id) && (enabled.includes(p.id) || p.id === "sandbox"));
   const c = o.currency;
   return (
     <div style={{ maxWidth: 560 }}>
